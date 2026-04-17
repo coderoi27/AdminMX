@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Acceso Admin{% endblock %}
+
+{% block body %}
+    <main style="min-height: 100vh; display: grid; place-items: center; background: linear-gradient(180deg, #f9fafb 0%, #eef2f7 100%); padding: 1.5rem;">
+        <section style="width: 100%; max-width: 420px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);">
+            <p style="margin: 0 0 0.5rem; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280;">
+                Mi Monchis MX
+            </p>
+            <h1 style="margin: 0 0 0.5rem; font-size: 1.8rem;">Admin Access</h1>
+            <p style="margin: 0 0 1.5rem; color: #4b5563;">
+                Ingresa con tu cuenta administrativa.
+            </p>
+
+            {% if error %}
+                <div style="margin-bottom: 1rem; border-radius: 12px; background: #fef2f2; color: #991b1b; padding: 0.9rem 1rem;">
+                    {{ error.messageKey|trans(error.messageData, 'security') }}
+                </div>
+            {% endif %}
+
+            <form method="post">
+                <label for="username" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Email</label>
+                <input
+                    id="username"
+                    type="email"
+                    name="_username"
+                    value="{{ last_username }}"
+                    required
+                    autofocus
+                    autocomplete="email"
+                    style="width: 100%; margin-bottom: 1rem; border: 1px solid #d1d5db; border-radius: 12px; padding: 0.85rem 1rem;"
+                >
+
+                <label for="password" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="_password"
+                    required
+                    autocomplete="current-password"
+                    style="width: 100%; margin-bottom: 1rem; border: 1px solid #d1d5db; border-radius: 12px; padding: 0.85rem 1rem;"
+                >
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <button
+                    type="submit"
+                    style="width: 100%; border: none; border-radius: 12px; background: #111827; color: #ffffff; padding: 0.9rem 1rem; font-weight: 700; cursor: pointer;"
+                >
+                    Entrar
+                </button>
+            </form>
+        </section>
+    </main>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        <p style="margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280;">
+            Alpha Admin
+        </p>
+        <h1 style="margin: 0 0 1rem; font-size: 2rem;">Base operativa inicial</h1>
+        <p style="margin: 0 0 2rem; color: #4b5563; line-height: 1.6;">
+            Este proyecto ya aloja el runtime inicial del contexto <strong>core/domain</strong> y de la consola administrativa.
+        </p>
+
+        <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem;">
+            <h2 style="margin-top: 0;">Primer corte montado</h2>
+            <ul style="line-height: 1.8; color: #374151;">
+                <li>Estructura inicial de entidades Doctrine para core y admin</li>
+                <li>Feed API base en <code>/api/v1/locations/feed</code></li>
+                <li>Punto de partida para migraciones, leads, invitaciones y narrativa</li>
+            </ul>
+        </section>
+    </main>
+{% endblock %}
