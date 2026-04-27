@@ -98,11 +98,21 @@ class PlaceAddress
         return $this;
     }
 
+    public function getLabel(): ?string
+    {
+        return $this->label;
+    }
+
     public function setCountryCode(string $countryCode): self
     {
         $this->countryCode = $countryCode;
 
         return $this;
+    }
+
+    public function getCountryCode(): string
+    {
+        return $this->countryCode;
     }
 
     public function setState(?string $state): self
@@ -112,11 +122,21 @@ class PlaceAddress
         return $this;
     }
 
+    public function getState(): ?string
+    {
+        return $this->state;
+    }
+
     public function setCity(?string $city): self
     {
         $this->city = $city;
 
         return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
     }
 
     public function setNeighborhood(?string $neighborhood): self
@@ -126,11 +146,21 @@ class PlaceAddress
         return $this;
     }
 
+    public function getNeighborhood(): ?string
+    {
+        return $this->neighborhood;
+    }
+
     public function setStreet(?string $street): self
     {
         $this->street = $street;
 
         return $this;
+    }
+
+    public function getStreet(): ?string
+    {
+        return $this->street;
     }
 
     public function setExtNumber(?string $extNumber): self
@@ -140,11 +170,21 @@ class PlaceAddress
         return $this;
     }
 
+    public function getExtNumber(): ?string
+    {
+        return $this->extNumber;
+    }
+
     public function setIntNumber(?string $intNumber): self
     {
         $this->intNumber = $intNumber;
 
         return $this;
+    }
+
+    public function getIntNumber(): ?string
+    {
+        return $this->intNumber;
     }
 
     public function setZipCode(?string $zipCode): self
@@ -154,11 +194,21 @@ class PlaceAddress
         return $this;
     }
 
+    public function getZipCode(): ?string
+    {
+        return $this->zipCode;
+    }
+
     public function setReference(?string $reference): self
     {
         $this->reference = $reference;
 
         return $this;
+    }
+
+    public function getReference(): ?string
+    {
+        return $this->reference;
     }
 
     public function setLatitude(string $latitude): self
@@ -180,6 +230,11 @@ class PlaceAddress
         $this->isPrimary = $isPrimary;
 
         return $this;
+    }
+
+    public function isPrimary(): bool
+    {
+        return $this->isPrimary;
     }
 
     public function getLatitude(): string

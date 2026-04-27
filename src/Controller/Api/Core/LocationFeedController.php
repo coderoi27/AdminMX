@@ -17,7 +17,7 @@ final class LocationFeedController extends AbstractController
     public function __invoke(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         $locations = $entityManager->getRepository(MerchantLocation::class)->findBy(
-            ['publicationState' => 'public_visible'],
+            ['publicationState' => MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE],
             ['id' => 'DESC'],
             50
         );
@@ -49,7 +49,7 @@ final class LocationFeedController extends AbstractController
                     'distance_meters' => $distanceMeters,
                     'whatsapp_enabled' => $location->isWhatsappEnabled(),
                     'whatsapp_e164' => $location->getWhatsappE164(),
-                    'source_type' => 'owner_registered',
+                    'source_type' => $location->getSourceType(),
                     'publication_state' => $location->getPublicationState(),
                 ];
             },
@@ -61,6 +61,11 @@ final class LocationFeedController extends AbstractController
             'meta' => [
                 'page' => 1,
                 'per_page' => count($data),
+                'contract_version' => '2026-04-18',
+                'contract' => [
+                    'source_type' => MerchantLocation::sourceTypes(),
+                    'publication_state' => MerchantLocation::publicationStates(),
+                ],
             ],
             'errors' => [],
         ]);

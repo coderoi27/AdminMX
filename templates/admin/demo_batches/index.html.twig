@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tandas demo | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1080px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.45rem; font-size:0.85rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Plugin demo</p>
+                <h1 style="margin:0; font-size:2rem;">Tandas demo y control operativo</h1>
+                <p style="margin:0.8rem 0 0; color:#4b5563; line-height:1.6; max-width:760px;">
+                    Esta base deja preparado el circuito para que el plugin genere locales demo persistidos como canónicos con <code>source_type = fake_seed</code>, sin crear una vía paralela al feed.
+                </p>
+            </div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                    Volver al dashboard
+                </a>
+                <a href="{{ path('admin_locations_index', { source_type: 'fake_seed' }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                    Ver locales demo canónicos
+                </a>
+            </div>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-top:1rem; padding:0.9rem 1rem; border-radius:14px; border:1px solid {{ label == 'error' ? '#fecaca' : '#d1fae5' }}; background:{{ label == 'error' ? '#fef2f2' : '#ecfdf5' }}; color:#111827;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if not storage_ready %}
+            <section style="margin-top:1.5rem; border:1px solid #fde68a; border-radius:16px; padding:1.1rem 1.2rem; background:#fffbeb;">
+                <strong style="display:block; color:#92400e;">La base para tandas demo aún no está migrada.</strong>
+                <p style="margin:0.45rem 0 0; color:#78350f; line-height:1.6;">
+                    El panel ya está cableado en `Admin`, pero necesitas ejecutar <code>php bin/console doctrine:migrations:migrate</code> dentro de <code>Sistemas/Admin-MiMonchisMX</code> para habilitar tablas como <code>system_plugins</code>, <code>demo_seed_batches</code> y <code>demo_seed_batch_items</code>.
+                </p>
+            </section>
+        {% endif %}
+
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-top:1.5rem;">
+            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Estado del plugin</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:1.35rem; color:#111827;">{{ plugin ? plugin.status : 'no_configurado' }}</strong>
+                <span style="display:inline-flex; margin-top:0.6rem; padding:0.3rem 0.65rem; border-radius:999px; background:{{ plugin and plugin.isEnabled ? '#dcfce7' : '#f3f4f6' }}; color:{{ plugin and plugin.isEnabled ? '#166534' : '#4b5563' }}; font-size:0.82rem; font-weight:700;">
+                    {{ plugin and plugin.isEnabled ? 'Activado' : 'Desactivado' }}
+                </span>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Tandas registradas</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ batches|length }}</strong>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Locales demo canónicos</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ demo_locations_count }}</strong>
+            </article>
+        </section>
+
+        <section style="border:1px solid #e5e7eb; border-radius:16px; padding:1.25rem; margin-top:1.5rem;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                <div>
+                    <h2 style="margin:0;">Control del plugin demo</h2>
+                    <p style="margin:0.35rem 0 0; color:#6b7280; line-height:1.6;">
+                        La activación del plugin no destruye datos. Solo habilita o bloquea la creación de nuevas tandas.
+                    </p>
+                </div>
+                <form method="post" action="{{ path('admin_demo_batches_toggle_plugin') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('toggle_demo_seed_plugin') }}">
+                    <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.55rem 0.95rem; background:{{ plugin and plugin.isEnabled ? '#111827' : '#f97316' }}; color:#fff; border:0; font-weight:800; cursor:pointer;">
+                        {{ plugin and plugin.isEnabled ? 'Desactivar plugin demo' : 'Activar plugin demo' }}
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section style="border:1px solid #e5e7eb; border-radius:16px; padding:1.25rem; margin-top:1.5rem;">
+            <h2 style="margin:0;">Estados esperados por tanda</h2>
+            <div style="display:flex; gap:0.65rem; flex-wrap:wrap; margin-top:0.9rem;">
+                {% for status, count in batch_stats %}
+                    <span style="display:inline-flex; align-items:center; gap:0.45rem; border-radius:999px; padding:0.45rem 0.8rem; background:#f8fafc; border:1px solid #e5e7eb; color:#374151; font-weight:700;">
+                        <span>{{ status }}</span>
+                        <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.35rem; height:1.35rem; border-radius:999px; background:#fff; font-size:0.78rem;">{{ count }}</span>
+                    </span>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section style="border:1px solid #e5e7eb; border-radius:16px; padding:1.25rem; margin-top:1.5rem;">
+            <h2 style="margin:0;">Últimas tandas demo</h2>
+            {% if batches is empty %}
+                <p style="margin:0.85rem 0 0; color:#6b7280; line-height:1.6;">
+                    Aún no existen tandas. El siguiente paso del plugin será crear lotes con contexto territorial, radio, expiración y vínculo directo a los locales canónicos generados.
+                </p>
+            {% else %}
+                <div style="display:grid; gap:0.8rem; margin-top:1rem;">
+                    {% for batch in batches %}
+                        <article style="display:grid; gap:0.65rem; padding:1rem; border-radius:16px; background:#f8fafc; border:1px solid #e5e7eb;">
+                            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                                <div>
+                                    <strong style="display:block; color:#111827;">{{ batch.name }}</strong>
+                                    <span style="display:block; margin-top:0.18rem; color:#6b7280;">{{ batch.city ?: 'Sin ciudad' }}, {{ batch.state ?: 'Sin estado' }} · {{ batch.countryCode }}</span>
+                                </div>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ batch.status }}</span>
+                            </div>
+                            <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
+                                <span>Solicitados: {{ batch.requestedLocationsCount }}</span>
+                                <span>Generados: {{ batch.generatedLocationsCount }}</span>
+                                <span>Expira: {{ batch.expiresAt ? batch.expiresAt|date('Y-m-d H:i') : 'sin fecha' }}</span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}

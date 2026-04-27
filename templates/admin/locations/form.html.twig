@@ -1,0 +1,170 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ page_title }} | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 920px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Alpha Admin</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">{{ page_title }}</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    Alta o edición mínima del local canónico para operar el alpha desde consola.
+                </p>
+            </div>
+            <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                Volver al listado
+            </a>
+        </div>
+
+        {% if errors is not empty %}
+            <section style="margin-top:1.25rem; border-radius:16px; padding:1rem 1.1rem; background:#fff1f2; color:#be123c;">
+                <strong style="display:block; margin-bottom:0.45rem;">Corrige lo siguiente:</strong>
+                <ul style="margin:0; padding-left:1.1rem; line-height:1.7;">
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        <form method="post" style="display:grid; gap:1.5rem; margin-top:1.5rem;">
+            <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; display:grid; gap:1rem; background:#fff;">
+                <h2 style="margin:0;">Identidad del local</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Merchant</span>
+                        <input type="text" name="merchant_name" value="{{ merchant_name }}" {{ is_edit ? 'readonly' }} style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; background:{{ is_edit ? '#f8fafc' : '#fff' }};">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Nombre del local</span>
+                        <input type="text" name="location_name" value="{{ location.name ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Origen</span>
+                        <select name="source_type" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; background:#fff;">
+                            {% for source_type in source_types %}
+                                <option value="{{ source_type }}" {{ location.sourceType == source_type ? 'selected' }}>{{ source_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Publicación</span>
+                        <select name="publication_state" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; background:#fff;">
+                            {% for publication_state in publication_states %}
+                                <option value="{{ publication_state }}" {{ location.publicationState == publication_state ? 'selected' }}>{{ publication_state }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Tipo de local</span>
+                        <select name="location_type" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; background:#fff;">
+                            {% for location_type in location_types %}
+                                <option value="{{ location_type }}" {{ location.locationType == location_type ? 'selected' }}>{{ location_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Estado operativo</span>
+                        <select name="status" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; background:#fff;">
+                            {% for status_type in status_types %}
+                                <option value="{{ status_type }}" {{ location.status == status_type ? 'selected' }}>{{ status_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <label style="display:grid; gap:0.45rem;">
+                    <span style="font-weight:700; color:#111827;">Descripción corta</span>
+                    <textarea name="short_description" rows="4" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; resize:vertical;">{{ location.shortDescription ?? '' }}</textarea>
+                </label>
+            </section>
+
+            <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; display:grid; gap:1rem; background:#fff;">
+                <h2 style="margin:0;">Contacto</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Teléfono E164</span>
+                        <input type="text" name="phone_e164" value="{{ location.phoneE164 ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">WhatsApp E164</span>
+                        <input type="text" name="whatsapp_e164" value="{{ location.whatsappE164 ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                </div>
+                <div style="display:flex; gap:1.25rem; flex-wrap:wrap;">
+                    <label style="display:inline-flex; align-items:center; gap:0.5rem; color:#374151; font-weight:700;">
+                        <input type="checkbox" name="whatsapp_enabled" value="1" {{ location.whatsappEnabled ? 'checked' }}>
+                        WhatsApp activo
+                    </label>
+                    <label style="display:inline-flex; align-items:center; gap:0.5rem; color:#374151; font-weight:700;">
+                        <input type="checkbox" name="is_claimable" value="1" {{ location.isClaimable or not is_edit ? 'checked' }}>
+                        Claim habilitado
+                    </label>
+                </div>
+            </section>
+
+            <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; display:grid; gap:1rem; background:#fff;">
+                <h2 style="margin:0;">Dirección principal</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Etiqueta</span>
+                        <input type="text" name="address_label" value="{{ address.label ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">País</span>
+                        <input type="text" name="country_code" value="{{ address.countryCode ?? 'MX' }}" maxlength="2" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Estado</span>
+                        <input type="text" name="state" value="{{ address.state ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Ciudad</span>
+                        <input type="text" name="city" value="{{ address.city ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Colonia</span>
+                        <input type="text" name="neighborhood" value="{{ address.neighborhood ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Calle</span>
+                        <input type="text" name="street" value="{{ address.street ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Número exterior</span>
+                        <input type="text" name="ext_number" value="{{ address.extNumber ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Número interior</span>
+                        <input type="text" name="int_number" value="{{ address.intNumber ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Código postal</span>
+                        <input type="text" name="zip_code" value="{{ address.zipCode ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Latitud</span>
+                        <input type="text" name="latitude" value="{{ address.latitude ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                    <label style="display:grid; gap:0.45rem;">
+                        <span style="font-weight:700; color:#111827;">Longitud</span>
+                        <input type="text" name="longitude" value="{{ address.longitude ?? '' }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                    </label>
+                </div>
+                <label style="display:grid; gap:0.45rem;">
+                    <span style="font-weight:700; color:#111827;">Referencia</span>
+                    <textarea name="reference" rows="3" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem; resize:vertical;">{{ address.reference ?? '' }}</textarea>
+                </label>
+            </section>
+
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.7rem; border:none; border-radius:999px; padding:0.7rem 1.15rem; background:#111827; color:#fff; font-weight:700;">
+                    {{ is_edit ? 'Guardar cambios' : 'Crear local' }}
+                </button>
+                <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.7rem; border-radius:999px; padding:0.7rem 1.15rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </main>
+{% endblock %}

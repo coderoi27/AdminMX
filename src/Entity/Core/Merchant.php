@@ -131,6 +131,11 @@ class Merchant
         return $this;
     }
 
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
     public function getLocations(): Collection
     {
         return $this->locations;

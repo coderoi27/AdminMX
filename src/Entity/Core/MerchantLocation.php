@@ -13,6 +13,17 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class MerchantLocation
 {
+    public const SOURCE_TYPE_OWNER_REGISTERED = 'owner_registered';
+    public const SOURCE_TYPE_FAKE_SEED = 'fake_seed';
+    public const SOURCE_TYPE_GOOGLE_PLACES = 'google_places';
+    public const SOURCE_TYPE_CLAIMED = 'claimed';
+    public const SOURCE_TYPE_ADMIN_CURATED = 'admin_curated';
+
+    public const PUBLICATION_STATE_HIDDEN = 'hidden';
+    public const PUBLICATION_STATE_PENDING_VISIBLE = 'pending_visible';
+    public const PUBLICATION_STATE_PUBLIC_VISIBLE = 'public_visible';
+    public const PUBLICATION_STATE_ARCHIVED = 'archived';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -36,6 +47,9 @@ class MerchantLocation
 
     #[ORM\Column(length: 32)]
     private string $publicationState = 'hidden';
+
+    #[ORM\Column(length: 32)]
+    private string $sourceType = self::SOURCE_TYPE_OWNER_REGISTERED;
 
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $phoneE164 = null;
@@ -131,11 +145,21 @@ class MerchantLocation
         return $this;
     }
 
+    public function getLocationType(): string
+    {
+        return $this->locationType;
+    }
+
     public function setStatus(string $status): self
     {
         $this->status = $status;
 
         return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
     }
 
     public function getPublicationState(): string
@@ -145,7 +169,27 @@ class MerchantLocation
 
     public function setPublicationState(string $publicationState): self
     {
+        if (!in_array($publicationState, self::publicationStates(), true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported publication state "%s".', $publicationState));
+        }
+
         $this->publicationState = $publicationState;
+
+        return $this;
+    }
+
+    public function getSourceType(): string
+    {
+        return $this->sourceType;
+    }
+
+    public function setSourceType(string $sourceType): self
+    {
+        if (!in_array($sourceType, self::sourceTypes(), true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported source type "%s".', $sourceType));
+        }
+
+        $this->sourceType = $sourceType;
 
         return $this;
     }
@@ -193,11 +237,21 @@ class MerchantLocation
         return $this;
     }
 
+    public function getShortDescription(): ?string
+    {
+        return $this->shortDescription;
+    }
+
     public function setIsClaimable(bool $isClaimable): self
     {
         $this->isClaimable = $isClaimable;
 
         return $this;
+    }
+
+    public function isClaimable(): bool
+    {
+        return $this->isClaimable;
     }
 
     public function setClaimedAt(?\DateTimeImmutable $claimedAt): self
@@ -220,5 +274,45 @@ class MerchantLocation
         }
 
         return $this;
+    }
+
+    public function getPrimaryAddress(): ?PlaceAddress
+    {
+        foreach ($this->addresses as $address) {
+            if ($address->isPrimary()) {
+                return $address;
+            }
+        }
+
+        $firstAddress = $this->addresses->first();
+
+        return $firstAddress instanceof PlaceAddress ? $firstAddress : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function sourceTypes(): array
+    {
+        return [
+            self::SOURCE_TYPE_OWNER_REGISTERED,
+            self::SOURCE_TYPE_FAKE_SEED,
+            self::SOURCE_TYPE_GOOGLE_PLACES,
+            self::SOURCE_TYPE_CLAIMED,
+            self::SOURCE_TYPE_ADMIN_CURATED,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function publicationStates(): array
+    {
+        return [
+            self::PUBLICATION_STATE_HIDDEN,
+            self::PUBLICATION_STATE_PENDING_VISIBLE,
+            self::PUBLICATION_STATE_PUBLIC_VISIBLE,
+            self::PUBLICATION_STATE_ARCHIVED,
+        ];
     }
 }

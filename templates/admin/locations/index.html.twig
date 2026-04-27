@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Locales canónicos | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1120px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-bottom: 1rem; border-radius: 14px; padding: 0.9rem 1rem; background: {{ label == 'error' ? '#fff1f2' : '#eff6ff' }}; color: {{ label == 'error' ? '#be123c' : '#1d4ed8' }};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Alpha Admin</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Locales canónicos</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    CRUD mínimo para operar locales reales, demo o Google sin depender solo de base de datos o del plugin futuro.
+                </p>
+            </div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                    Volver al dashboard
+                </a>
+                <a href="{{ path('admin_locations_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                    Nuevo local
+                </a>
+            </div>
+        </div>
+
+        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem;">
+            <div style="display:grid; gap:1rem;">
+                <div>
+                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por origen</p>
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        <a href="{{ path('admin_locations_index', { publication_state: filters.publication_state ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_type == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == '' ? '#111827' : '#fff' }}; color:{{ filters.source_type == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos</a>
+                        {% for source_type in source_types %}
+                            <a href="{{ path('admin_locations_index', { source_type: source_type, publication_state: filters.publication_state ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_type == source_type ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == source_type ? '#111827' : '#fff' }}; color:{{ filters.source_type == source_type ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                                {{ source_type }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por publicación</p>
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.publication_state == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == '' ? '#111827' : '#fff' }}; color:{{ filters.publication_state == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos</a>
+                        {% for publication_state in publication_states %}
+                            <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null, publication_state: publication_state }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.publication_state == publication_state ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == publication_state ? '#111827' : '#fff' }}; color:{{ filters.publication_state == publication_state ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                                {{ publication_state }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section style="margin-top:1.5rem; display:grid; gap:0.9rem;">
+            {% if locations is empty %}
+                <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
+                    <strong style="display:block; color:#111827;">No hay locales para este filtro.</strong>
+                    <p style="margin:0.4rem 0 0; color:#6b7280;">Ajusta filtros o crea el primer local canónico.</p>
+                </article>
+            {% else %}
+                {% for location in locations %}
+                    {% set address = location.primaryAddress %}
+                    <article style="display:grid; gap:0.8rem; border:1px solid #e5e7eb; border-radius:18px; padding:1rem 1.1rem; background:#fff;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                            <div>
+                                <strong style="display:block; color:#111827; font-size:1.05rem;">{{ location.name }}</strong>
+                                <span style="display:block; margin-top:0.2rem; color:#6b7280;">{{ location.merchant.name }}</span>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.sourceType }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #d1d5db; color:#374151; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.publicationState }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#f8fafc; color:#475569; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.status }}</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
+                            <span>#{{ location.id }}</span>
+                            <span>{{ address ? address.toShortAddress() : 'Sin dirección publicada' }}</span>
+                            <span>{{ location.whatsappEnabled ? 'WhatsApp activo' : 'Sin WhatsApp' }}</span>
+                            <span>{{ location.isClaimable ? 'Claim habilitado' : 'Claim cerrado' }}</span>
+                        </div>
+
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <a href="{{ path('admin_locations_edit', { id: location.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff2e6; color:#c2410c; text-decoration:none; font-weight:700;">
+                                Editar
+                            </a>
+                            <form method="post" action="{{ path('admin_locations_archive', { id: location.id }) }}" onsubmit="return confirm('¿Archivar este local?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('archive_location_' ~ location.id) }}">
+                                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#fef2f2; color:#b91c1c; font-weight:700;">
+                                    Archivar
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}

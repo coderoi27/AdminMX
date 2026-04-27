@@ -34,6 +34,130 @@
                 <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Accesos usados</p>
                 <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.public_invitation_used }}</strong>
             </article>
+            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Locales canónicos</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.location_total }}</strong>
+            </article>
+        </section>
+
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; margin-top:1.5rem;">
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Acceso visible</p>
+                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Operar locales canónicos</h2>
+                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
+                    Alta, edición y archivado de locales reales, demo o Google desde el mismo circuito canónico.
+                </p>
+                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
+                    <a href="{{ path('admin_locations_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                        Crear local
+                    </a>
+                    <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                        Abrir listado
+                    </a>
+                </div>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Base para plugin</p>
+                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Tandas demo</h2>
+                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
+                    Preparadas para crear lotes demo con activación/desactivación del plugin y persistencia en locales canónicos.
+                </p>
+                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:{{ stats.demo_plugin and stats.demo_plugin.isEnabled ? '#dcfce7' : '#f3f4f6' }}; color:{{ stats.demo_plugin and stats.demo_plugin.isEnabled ? '#166534' : '#4b5563' }}; font-size:0.78rem; font-weight:800; text-transform:uppercase;">
+                        {{ stats.demo_plugin and stats.demo_plugin.isEnabled ? 'Plugin activado' : 'Plugin desactivado' }}
+                    </span>
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff7ed; color:#9a3412; font-size:0.78rem; font-weight:800;">
+                        {{ stats.fake_seed_total }} locales demo canónicos
+                    </span>
+                </div>
+                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
+                    <a href="{{ path('admin_demo_batches_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#f97316; color:#fff; text-decoration:none; font-weight:700;">
+                        Abrir panel demo
+                    </a>
+                </div>
+            </article>
+        </section>
+
+        <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                <div>
+                    <h2 style="margin:0;">Locales canónicos</h2>
+                    <p style="margin:0.35rem 0 0; color:#6b7280; line-height:1.6;">
+                        Primer panel operativo para revisar origen y publicación del feed canónico.
+                    </p>
+                </div>
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                    <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                        Abrir CRUD
+                    </a>
+                    <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                        Limpiar filtros
+                    </a>
+                </div>
+            </div>
+
+            <div style="display:grid; gap:1rem; margin-top:1.25rem;">
+                <div>
+                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por origen</p>
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        {% for source_type in source_types %}
+                            <a
+                                href="{{ path('admin_dashboard', { source_type: source_type, publication_state: filters.publication_state ?: null }) }}"
+                                style="display:inline-flex; align-items:center; gap:0.45rem; border-radius:999px; padding:0.48rem 0.85rem; border:1px solid {{ filters.source_type == source_type ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == source_type ? '#111827' : '#fff' }}; color:{{ filters.source_type == source_type ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;"
+                            >
+                                <span>{{ source_type }}</span>
+                                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.4rem; height:1.4rem; border-radius:999px; background:{{ filters.source_type == source_type ? 'rgba(255,255,255,0.14)' : '#f3f4f6' }}; font-size:0.78rem;">
+                                    {{ attribute(stats.locations_by_source, source_type) }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por publicación</p>
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        {% for publication_state in publication_states %}
+                            <a
+                                href="{{ path('admin_dashboard', { source_type: filters.source_type ?: null, publication_state: publication_state }) }}"
+                                style="display:inline-flex; align-items:center; gap:0.45rem; border-radius:999px; padding:0.48rem 0.85rem; border:1px solid {{ filters.publication_state == publication_state ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == publication_state ? '#111827' : '#fff' }}; color:{{ filters.publication_state == publication_state ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;"
+                            >
+                                <span>{{ publication_state }}</span>
+                                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.4rem; height:1.4rem; border-radius:999px; background:{{ filters.publication_state == publication_state ? 'rgba(255,255,255,0.14)' : '#f3f4f6' }}; font-size:0.78rem;">
+                                    {{ attribute(stats.locations_by_publication, publication_state) }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:1.25rem; display:grid; gap:0.75rem;">
+                {% if stats.latest_locations is empty %}
+                    <p style="margin:0; color:#6b7280;">No hay locales que coincidan con este filtro.</p>
+                {% else %}
+                    {% for location in stats.latest_locations %}
+                        {% set address = location.addresses|first %}
+                        <article style="display:grid; gap:0.7rem; padding:1rem; border-radius:16px; background:#f8fafc; border:1px solid #e5e7eb;">
+                            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                                <div>
+                                    <strong style="display:block; color:#111827; font-size:1rem;">{{ location.name }}</strong>
+                                    <span style="display:block; margin-top:0.18rem; color:#6b7280;">{{ location.merchant.name }}</span>
+                                </div>
+                                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.sourceType }}</span>
+                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #d1d5db; color:#374151; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.publicationState }}</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
+                                <span>#{{ location.id }}</span>
+                                <span>{{ address ? address.toShortAddress() : 'Sin dirección publicada' }}</span>
+                                <span>{{ location.whatsappEnabled ? 'WhatsApp activo' : 'Sin WhatsApp' }}</span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                {% endif %}
+            </div>
         </section>
 
         <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem;">
