@@ -51,10 +51,10 @@ class PlaceAddress
     private ?string $reference = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 7)]
-    private string $latitude;
+    private string $latitude = '';
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 7)]
-    private string $longitude;
+    private string $longitude = '';
 
     #[ORM\Column]
     private bool $isPrimary = true;

@@ -34,10 +34,10 @@ class MerchantLocation
     private Merchant $merchant;
 
     #[ORM\Column(length: 160)]
-    private string $name;
+    private string $name = '';
 
     #[ORM\Column(length: 180, unique: true)]
-    private string $slug;
+    private string $slug = '';
 
     #[ORM\Column(length: 16)]
     private string $locationType = 'fixed';
