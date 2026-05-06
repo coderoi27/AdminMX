@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Entity\Core\MerchantLocation;
+use App\Entity\Core\LocationCategory;
+use App\Entity\Core\EventLog;
+use App\Entity\Core\LocationClaimRequest;
 use App\Entity\Core\PublicInvitation;
 use App\Entity\Core\SystemPlugin;
 use Doctrine\DBAL\Exception;
@@ -22,7 +25,12 @@ final class DashboardController extends AbstractController
         $publicInvitationRepository = $entityManager->getRepository(PublicInvitation::class);
         $publicInvitations = $publicInvitationRepository->findBy([], ['id' => 'DESC']);
         $locationRepository = $entityManager->getRepository(MerchantLocation::class);
+        $categoryRepository = $entityManager->getRepository(LocationCategory::class);
+        $eventLogRepository = $entityManager->getRepository(EventLog::class);
         $allLocations = $locationRepository->findBy([], ['id' => 'DESC']);
+        $allCategories = $categoryRepository->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']);
+        $eventLogs = $eventLogRepository->findBy([], ['id' => 'DESC'], 800);
+        $claims = $entityManager->getRepository(LocationClaimRequest::class)->findBy([], ['id' => 'DESC']);
 
         $selectedSourceType = $request->query->getString('source_type', '');
         $selectedPublicationState = $request->query->getString('publication_state', '');
@@ -87,6 +95,23 @@ final class DashboardController extends AbstractController
                 $allLocations,
                 static fn (MerchantLocation $location): bool => $location->getSourceType() === MerchantLocation::SOURCE_TYPE_FAKE_SEED
             )),
+            'category_total' => count($allCategories),
+            'active_category_total' => count(array_filter(
+                $allCategories,
+                static fn (LocationCategory $category): bool => $category->isActive()
+            )),
+            'claims_pending_total' => count(array_filter(
+                $claims,
+                static fn (LocationClaimRequest $claim): bool => $claim->getStatus() === LocationClaimRequest::STATUS_PENDING
+            )),
+            'analytics' => [
+                'favorites_added' => $this->countEvents($eventLogs, 'public_favorite_added'),
+                'directions_clicked' => $this->countEvents($eventLogs, 'public_directions_clicked'),
+                'whatsapp_clicked' => $this->countEvents($eventLogs, 'public_whatsapp_clicked'),
+                'claims_started' => $this->countEvents($eventLogs, 'public_claim_started'),
+                'addresses_saved' => $this->countEvents($eventLogs, 'public_address_saved'),
+                'locations_opened' => $this->countEvents($eventLogs, 'public_location_opened'),
+            ],
         ];
 
         return $this->render('admin/dashboard.html.twig', [
@@ -98,5 +123,16 @@ final class DashboardController extends AbstractController
                 'publication_state' => $selectedPublicationState,
             ],
         ]);
+    }
+
+    /**
+     * @param list<EventLog> $eventLogs
+     */
+    private function countEvents(array $eventLogs, string $eventName): int
+    {
+        return count(array_filter(
+            $eventLogs,
+            static fn (EventLog $eventLog): bool => $eventLog->getEventName() === $eventName
+        ));
     }
 }

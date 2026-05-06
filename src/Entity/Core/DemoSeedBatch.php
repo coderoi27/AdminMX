@@ -31,7 +31,7 @@ class DemoSeedBatch
     private SystemPlugin $plugin;
 
     #[ORM\Column(length: 160)]
-    private string $name;
+    private string $name = '';
 
     #[ORM\Column(length: 32)]
     private string $status = self::STATUS_DRAFT;
@@ -82,6 +82,9 @@ class DemoSeedBatch
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $configJson = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $categorySlugs = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $seededAt = null;
@@ -220,6 +223,54 @@ class DemoSeedBatch
         return $this;
     }
 
+    public function getSourceAddress(): ?string
+    {
+        return $this->sourceAddress;
+    }
+
+    public function setSourceAddress(?string $sourceAddress): self
+    {
+        $this->sourceAddress = $sourceAddress;
+
+        return $this;
+    }
+
+    public function getRadiusMeters(): int
+    {
+        return $this->radiusMeters;
+    }
+
+    public function setRadiusMeters(int $radiusMeters): self
+    {
+        $this->radiusMeters = $radiusMeters;
+
+        return $this;
+    }
+
+    public function getCenterLatitude(): ?string
+    {
+        return $this->centerLatitude;
+    }
+
+    public function setCenterLatitude(?string $centerLatitude): self
+    {
+        $this->centerLatitude = $centerLatitude;
+
+        return $this;
+    }
+
+    public function getCenterLongitude(): ?string
+    {
+        return $this->centerLongitude;
+    }
+
+    public function setCenterLongitude(?string $centerLongitude): self
+    {
+        $this->centerLongitude = $centerLongitude;
+
+        return $this;
+    }
+
     public function getRequestedLocationsCount(): int
     {
         return $this->requestedLocationsCount;
@@ -252,6 +303,48 @@ class DemoSeedBatch
     public function setExpiresAt(?\DateTimeImmutable $expiresAt): self
     {
         $this->expiresAt = $expiresAt;
+
+        return $this;
+    }
+
+    public function getSeededAt(): ?\DateTimeImmutable
+    {
+        return $this->seededAt;
+    }
+
+    public function setSeededAt(?\DateTimeImmutable $seededAt): self
+    {
+        $this->seededAt = $seededAt;
+
+        return $this;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getCategorySlugs(): array
+    {
+        if (!is_array($this->categorySlugs)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn (mixed $value): string => trim(mb_strtolower((string) $value)),
+            $this->categorySlugs
+        )));
+    }
+
+    /**
+     * @param list<string> $categorySlugs
+     */
+    public function setCategorySlugs(array $categorySlugs): self
+    {
+        $normalized = array_values(array_unique(array_filter(array_map(
+            static fn (mixed $value): string => trim(mb_strtolower((string) $value)),
+            $categorySlugs
+        ))));
+
+        $this->categorySlugs = $normalized === [] ? null : $normalized;
 
         return $this;
     }

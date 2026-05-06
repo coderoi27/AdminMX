@@ -51,6 +51,13 @@ class MerchantLocation
     #[ORM\Column(length: 32)]
     private string $sourceType = self::SOURCE_TYPE_OWNER_REGISTERED;
 
+    #[ORM\Column(length: 120, nullable: true)]
+    private ?string $externalSourceKey = null;
+
+    #[ORM\ManyToOne(targetEntity: LocationCategory::class, inversedBy: 'locations')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?LocationCategory $primaryCategory = null;
+
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $phoneE164 = null;
 
@@ -190,6 +197,30 @@ class MerchantLocation
         }
 
         $this->sourceType = $sourceType;
+
+        return $this;
+    }
+
+    public function getPrimaryCategory(): ?LocationCategory
+    {
+        return $this->primaryCategory;
+    }
+
+    public function setPrimaryCategory(?LocationCategory $primaryCategory): self
+    {
+        $this->primaryCategory = $primaryCategory;
+
+        return $this;
+    }
+
+    public function getExternalSourceKey(): ?string
+    {
+        return $this->externalSourceKey;
+    }
+
+    public function setExternalSourceKey(?string $externalSourceKey): self
+    {
+        $this->externalSourceKey = $externalSourceKey !== null && trim($externalSourceKey) !== '' ? trim($externalSourceKey) : null;
 
         return $this;
     }

@@ -16,6 +16,9 @@
                 <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
                     Volver al dashboard
                 </a>
+                <a href="{{ path('admin_demo_batches_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.55rem 0.95rem; background:#f97316; color:#fff; text-decoration:none; font-weight:700;">
+                    Nueva tanda
+                </a>
                 <a href="{{ path('admin_locations_index', { source_type: 'fake_seed' }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
                     Ver locales demo canónicos
                 </a>
@@ -108,6 +111,26 @@
                                 <span>Generados: {{ batch.generatedLocationsCount }}</span>
                                 <span>Expira: {{ batch.expiresAt ? batch.expiresAt|date('Y-m-d H:i') : 'sin fecha' }}</span>
                             </div>
+                            <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
+                                <span>Centro: {{ batch.centerLatitude ?: 'sin lat' }}, {{ batch.centerLongitude ?: 'sin lng' }}</span>
+                                <span>Radio: {{ batch.radiusMeters }} m</span>
+                                <span>Última siembra: {{ batch.seededAt ? batch.seededAt|date('Y-m-d H:i') : 'nunca' }}</span>
+                            </div>
+                            {% if batch.categorySlugs is not empty %}
+                                <div style="display:flex; gap:0.55rem; flex-wrap:wrap;">
+                                    {% for category_slug in batch.categorySlugs %}
+                                        <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff; border:1px solid #e5e7eb; color:#374151; font-size:0.78rem; font-weight:700;">
+                                            {{ category_slug }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <form method="post" action="{{ path('admin_demo_batches_seed', { id: batch.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('seed_demo_batch_' ~ batch.id) }}">
+                                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; font-weight:700;">
+                                    Sembrar ahora
+                                </button>
+                            </form>
                         </article>
                     {% endfor %}
                 </div>

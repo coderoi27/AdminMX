@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api\Core;
 
+use App\Entity\Core\LocationCategory;
 use App\Entity\Core\MerchantLocation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +22,7 @@ final class LocationFeedController extends AbstractController
             ['id' => 'DESC'],
             50
         );
+        $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
 
         $lat = $request->query->get('lat');
         $lng = $request->query->get('lng');
@@ -49,8 +51,17 @@ final class LocationFeedController extends AbstractController
                     'distance_meters' => $distanceMeters,
                     'whatsapp_enabled' => $location->isWhatsappEnabled(),
                     'whatsapp_e164' => $location->getWhatsappE164(),
+                    'is_claimable' => $location->isClaimable(),
                     'source_type' => $location->getSourceType(),
+                    'external_source_key' => $location->getExternalSourceKey(),
                     'publication_state' => $location->getPublicationState(),
+                    'category_id' => $location->getPrimaryCategory()?->getId(),
+                    'category_slug' => $location->getPrimaryCategory()?->getSlug(),
+                    'category_name' => $location->getPrimaryCategory()?->getName(),
+                    'category_icon_key' => $location->getPrimaryCategory()?->getIconKey(),
+                    'category_color_hex' => $location->getPrimaryCategory()?->getColorHex(),
+                    'category_default_photo_url' => $location->getPrimaryCategory()?->getDefaultPhotoUrl(),
+                    'category_cover_photo_url' => $location->getPrimaryCategory()?->getCoverPhotoUrl(),
                 ];
             },
             $locations
@@ -61,11 +72,29 @@ final class LocationFeedController extends AbstractController
             'meta' => [
                 'page' => 1,
                 'per_page' => count($data),
-                'contract_version' => '2026-04-18',
+                'contract_version' => '2026-05-03',
                 'contract' => [
                     'source_type' => MerchantLocation::sourceTypes(),
                     'publication_state' => MerchantLocation::publicationStates(),
+                    'dedup_priority' => ['owner_registered', 'claimed', 'admin_curated', 'fake_seed', 'google_places'],
                 ],
+                'category_catalog' => array_map(
+                    static fn (LocationCategory $category): array => [
+                        'id' => $category->getId(),
+                        'name' => $category->getName(),
+                        'slug' => $category->getSlug(),
+                        'icon_key' => $category->getIconKey(),
+                        'color_hex' => $category->getColorHex(),
+                        'default_photo_url' => $category->getDefaultPhotoUrl(),
+                        'cover_photo_url' => $category->getCoverPhotoUrl(),
+                        'regional_strategy' => $category->getRegionalStrategy(),
+                        'featured_region_scope' => $category->getFeaturedRegionScope(),
+                        'google_place_type_mappings' => $category->getGooglePlaceTypeMappings(),
+                        'sort_order' => $category->getSortOrder(),
+                        'is_active' => $category->isActive(),
+                    ],
+                    $categories
+                ),
             ],
             'errors' => [],
         ]);

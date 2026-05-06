@@ -1,0 +1,88 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Categorías | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1120px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-bottom: 1rem; border-radius: 14px; padding: 0.9rem 1rem; background: {{ label == 'error' ? '#fff1f2' : '#eff6ff' }}; color: {{ label == 'error' ? '#be123c' : '#1d4ed8' }};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Alpha Admin</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Catálogo de categorías</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    Fuente de verdad para chips, tarjetas, pines y siembra demo. Evita categorías hardcodeadas en frontend o plugin.
+                </p>
+            </div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                    Volver al dashboard
+                </a>
+                <a href="{{ path('admin_categories_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                    Nueva categoría
+                </a>
+            </div>
+        </div>
+
+        <section style="margin-top:1.5rem; display:grid; gap:0.9rem;">
+            {% if categories is empty %}
+                <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
+                    <strong style="display:block; color:#111827;">Todavía no hay categorías.</strong>
+                    <p style="margin:0.4rem 0 0; color:#6b7280;">Crea el primer catálogo para que `Public` y el plugin demo consuman categorías válidas.</p>
+                </article>
+            {% else %}
+                {% for category in categories %}
+                    <article style="display:grid; gap:0.8rem; border:1px solid #e5e7eb; border-radius:18px; padding:1rem 1.1rem; background:#fff;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap;">
+                                    <strong style="display:block; color:#111827; font-size:1.05rem;">{{ category.name }}</strong>
+                                    <span style="display:inline-flex; align-items:center; border-radius:999px; padding:0.28rem 0.55rem; background:{{ category.colorHex ?: '#F3F4F6' }}; color:{{ category.colorHex ? '#ffffff' : '#374151' }}; font-size:0.74rem; font-weight:800;">
+                                        {{ category.slug }}
+                                    </span>
+                                </div>
+                                <span style="display:block; margin-top:0.2rem; color:#6b7280;">icon_key: {{ category.iconKey ?: 'sin_icono' }} · orden: {{ category.sortOrder }}</span>
+                                <span style="display:block; margin-top:0.2rem; color:#94a3b8;">
+                                    {{ category.featuredRegionScope ?: 'Sin región destacada' }} · {{ category.regionalStrategy ?: 'admin_curated' }}
+                                </span>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ category.isActive ? '#dcfce7' : '#f3f4f6' }}; color:{{ category.isActive ? '#166534' : '#4b5563' }}; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ category.isActive ? 'activa' : 'inactiva' }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff7ed; color:#9a3412; font-size:0.76rem; font-weight:800;">{{ attribute(usage_by_category_id, category.id) }} locales</span>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            {% if category.defaultPhotoUrl %}
+                                <a href="{{ category.defaultPhotoUrl }}" target="_blank" rel="noreferrer" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#eff6ff; color:#1d4ed8; text-decoration:none; font-weight:700;">
+                                    Ver foto
+                                </a>
+                            {% endif %}
+                            <a href="{{ path('admin_categories_edit', { id: category.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff2e6; color:#c2410c; text-decoration:none; font-weight:700;">
+                                Editar
+                            </a>
+                            <form method="post" action="{{ path('admin_categories_toggle', { id: category.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('toggle_category_' ~ category.id) }}">
+                                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#f8fafc; color:#334155; font-weight:700;">
+                                    {{ category.isActive ? 'Desactivar' : 'Activar' }}
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('admin_categories_delete', { id: category.id }) }}" onsubmit="return confirm('¿Eliminar esta categoría? Los locales quedarán sin categoría primaria.');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_category_' ~ category.id) }}">
+                                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#fef2f2; color:#b91c1c; font-weight:700;">
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}

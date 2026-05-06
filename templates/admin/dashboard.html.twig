@@ -38,6 +38,14 @@
                 <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Locales canónicos</p>
                 <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.location_total }}</strong>
             </article>
+            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Categorías activas</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.active_category_total }}</strong>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Claims pendientes</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.claims_pending_total }}</strong>
+            </article>
         </section>
 
         <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; margin-top:1.5rem;">
@@ -53,6 +61,41 @@
                     </a>
                     <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
                         Abrir listado
+                    </a>
+                </div>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Fuente de verdad visual</p>
+                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Catálogo de categorías</h2>
+                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
+                    Administra categorías reales para chips, cards, pines y tandas demo sin depender de defaults en el código.
+                </p>
+                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff7ed; color:#9a3412; font-size:0.78rem; font-weight:800;">
+                        {{ stats.category_total }} categorías totales
+                    </span>
+                </div>
+                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
+                    <a href="{{ path('admin_categories_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                        Crear categoría
+                    </a>
+                    <a href="{{ path('admin_categories_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                        Abrir catálogo
+                    </a>
+                </div>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Revisión operativa</p>
+                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Claims y blacklist</h2>
+                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
+                    Gestiona solicitudes de claim de locales y la blacklist de correos temporales desde el mismo admin.
+                </p>
+                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
+                    <a href="{{ path('admin_claims_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                        Ver claims
+                    </a>
+                    <a href="{{ path('admin_blocked_email_domains_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                        Abrir blacklist
                     </a>
                 </div>
             </article>
@@ -76,6 +119,41 @@
                     </a>
                 </div>
             </article>
+        </section>
+
+        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem; background:#fff;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                <div>
+                    <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Rollups alpha</p>
+                    <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Interacciones públicas</h2>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0.9rem; margin-top:1rem;">
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
+                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Favoritos</span>
+                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.favorites_added }}</strong>
+                </article>
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
+                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Cómo llegar</span>
+                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.directions_clicked }}</strong>
+                </article>
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
+                    <span style="display:block; color:#6b7280; font-size:0.8rem;">WhatsApp</span>
+                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.whatsapp_clicked }}</strong>
+                </article>
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
+                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Claims iniciados</span>
+                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.claims_started }}</strong>
+                </article>
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
+                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Ubis guardadas</span>
+                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.addresses_saved }}</strong>
+                </article>
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
+                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Fichas abiertas</span>
+                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.locations_opened }}</strong>
+                </article>
+            </div>
         </section>
 
         <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem;">

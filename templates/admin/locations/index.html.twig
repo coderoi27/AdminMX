@@ -35,9 +35,9 @@
                 <div>
                     <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por origen</p>
                     <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                        <a href="{{ path('admin_locations_index', { publication_state: filters.publication_state ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_type == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == '' ? '#111827' : '#fff' }}; color:{{ filters.source_type == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos</a>
+                        <a href="{{ path('admin_locations_index', { publication_state: filters.publication_state ?: null, category_slug: filters.category_slug ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_type == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == '' ? '#111827' : '#fff' }}; color:{{ filters.source_type == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos</a>
                         {% for source_type in source_types %}
-                            <a href="{{ path('admin_locations_index', { source_type: source_type, publication_state: filters.publication_state ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_type == source_type ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == source_type ? '#111827' : '#fff' }}; color:{{ filters.source_type == source_type ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                            <a href="{{ path('admin_locations_index', { source_type: source_type, publication_state: filters.publication_state ?: null, category_slug: filters.category_slug ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_type == source_type ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == source_type ? '#111827' : '#fff' }}; color:{{ filters.source_type == source_type ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
                                 {{ source_type }}
                             </a>
                         {% endfor %}
@@ -47,10 +47,23 @@
                 <div>
                     <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por publicación</p>
                     <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                        <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.publication_state == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == '' ? '#111827' : '#fff' }}; color:{{ filters.publication_state == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos</a>
+                        <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null, category_slug: filters.category_slug ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.publication_state == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == '' ? '#111827' : '#fff' }}; color:{{ filters.publication_state == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos</a>
                         {% for publication_state in publication_states %}
-                            <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null, publication_state: publication_state }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.publication_state == publication_state ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == publication_state ? '#111827' : '#fff' }}; color:{{ filters.publication_state == publication_state ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                            <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null, publication_state: publication_state, category_slug: filters.category_slug ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.publication_state == publication_state ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == publication_state ? '#111827' : '#fff' }}; color:{{ filters.publication_state == publication_state ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
                                 {{ publication_state }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por categoría</p>
+                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                        <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null, publication_state: filters.publication_state ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.category_slug == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.category_slug == '' ? '#111827' : '#fff' }}; color:{{ filters.category_slug == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todas</a>
+                        {% for category in categories %}
+                            <a href="{{ path('admin_locations_index', { source_type: filters.source_type ?: null, publication_state: filters.publication_state ?: null, category_slug: category.slug }) }}" style="display:inline-flex; align-items:center; gap:0.4rem; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.category_slug == category.slug ? '#111827' : '#e5e7eb' }}; background:{{ filters.category_slug == category.slug ? '#111827' : '#fff' }}; color:{{ filters.category_slug == category.slug ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                                <span style="display:inline-flex; width:0.7rem; height:0.7rem; border-radius:999px; background:{{ category.colorHex ?: '#CBD5E1' }};"></span>
+                                {{ category.name }}
                             </a>
                         {% endfor %}
                     </div>
@@ -77,6 +90,11 @@
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.sourceType }}</span>
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #d1d5db; color:#374151; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.publicationState }}</span>
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#f8fafc; color:#475569; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.status }}</span>
+                                {% if location.primaryCategory %}
+                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ location.primaryCategory.colorHex ?: '#FFF7ED' }}; color:{{ location.primaryCategory.colorHex ? '#ffffff' : '#9a3412' }}; font-size:0.76rem; font-weight:800;">
+                                        {{ location.primaryCategory.name }}
+                                    </span>
+                                {% endif %}
                             </div>
                         </div>
 

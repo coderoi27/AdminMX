@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Entity\Core\Merchant;
+use App\Entity\Core\LocationCategory;
 use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\PlaceAddress;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,9 +23,12 @@ final class CanonicalLocationCrudController extends AbstractController
     {
         $selectedSourceType = $request->query->getString('source_type', '');
         $selectedPublicationState = $request->query->getString('publication_state', '');
+        $selectedCategorySlug = trim($request->query->getString('category_slug', ''));
 
         $sourceTypes = MerchantLocation::sourceTypes();
         $publicationStates = MerchantLocation::publicationStates();
+        $categoryRepository = $entityManager->getRepository(LocationCategory::class);
+        $categories = $categoryRepository->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']);
 
         if (!in_array($selectedSourceType, $sourceTypes, true)) {
             $selectedSourceType = '';
@@ -34,23 +38,42 @@ final class CanonicalLocationCrudController extends AbstractController
             $selectedPublicationState = '';
         }
 
-        $criteria = [];
-        if ($selectedSourceType !== '') {
-            $criteria['sourceType'] = $selectedSourceType;
-        }
-        if ($selectedPublicationState !== '') {
-            $criteria['publicationState'] = $selectedPublicationState;
+        $selectedCategory = null;
+        if ($selectedCategorySlug !== '') {
+            $selectedCategory = $categoryRepository->findOneBy(['slug' => $selectedCategorySlug]);
+            if ($selectedCategory === null) {
+                $selectedCategorySlug = '';
+            }
         }
 
-        $locations = $entityManager->getRepository(MerchantLocation::class)->findBy($criteria, ['id' => 'DESC'], 30);
+        $queryBuilder = $entityManager->getRepository(MerchantLocation::class)->createQueryBuilder('location')
+            ->leftJoin('location.merchant', 'merchant')->addSelect('merchant')
+            ->leftJoin('location.primaryCategory', 'category')->addSelect('category')
+            ->leftJoin('location.addresses', 'address')->addSelect('address')
+            ->orderBy('location.id', 'DESC')
+            ->setMaxResults(30);
+
+        if ($selectedSourceType !== '') {
+            $queryBuilder->andWhere('location.sourceType = :sourceType')->setParameter('sourceType', $selectedSourceType);
+        }
+        if ($selectedPublicationState !== '') {
+            $queryBuilder->andWhere('location.publicationState = :publicationState')->setParameter('publicationState', $selectedPublicationState);
+        }
+        if ($selectedCategory !== null) {
+            $queryBuilder->andWhere('location.primaryCategory = :category')->setParameter('category', $selectedCategory);
+        }
+
+        $locations = $queryBuilder->getQuery()->getResult();
 
         return $this->render('admin/locations/index.html.twig', [
             'locations' => $locations,
             'source_types' => $sourceTypes,
             'publication_states' => $publicationStates,
+            'categories' => $categories,
             'filters' => [
                 'source_type' => $selectedSourceType,
                 'publication_state' => $selectedPublicationState,
+                'category_slug' => $selectedCategorySlug,
             ],
         ]);
     }
@@ -84,6 +107,7 @@ final class CanonicalLocationCrudController extends AbstractController
                 'publication_states' => MerchantLocation::publicationStates(),
                 'location_types' => ['fixed', 'mobile'],
                 'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+                'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
                 'is_edit' => false,
                 'merchant_name' => $request->request->getString('merchant_name', ''),
             ]);
@@ -98,6 +122,7 @@ final class CanonicalLocationCrudController extends AbstractController
             'publication_states' => MerchantLocation::publicationStates(),
             'location_types' => ['fixed', 'mobile'],
             'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+            'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'is_edit' => false,
             'merchant_name' => '',
         ]);
@@ -132,6 +157,7 @@ final class CanonicalLocationCrudController extends AbstractController
                 'publication_states' => MerchantLocation::publicationStates(),
                 'location_types' => ['fixed', 'mobile'],
                 'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+                'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
                 'is_edit' => true,
                 'merchant_name' => $location->getMerchant()->getName(),
             ]);
@@ -146,6 +172,7 @@ final class CanonicalLocationCrudController extends AbstractController
             'publication_states' => MerchantLocation::publicationStates(),
             'location_types' => ['fixed', 'mobile'],
             'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+            'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'is_edit' => true,
             'merchant_name' => $location->getMerchant()->getName(),
         ]);
@@ -195,6 +222,18 @@ final class CanonicalLocationCrudController extends AbstractController
             $errors[] = 'Debes capturar el nombre visible del local.';
         } else {
             $location->setName($locationName);
+        }
+
+        $categoryId = $request->request->getInt('primary_category_id', 0);
+        if ($categoryId > 0) {
+            $category = $entityManager->find(LocationCategory::class, $categoryId);
+            if (!$category instanceof LocationCategory) {
+                $errors[] = 'La categoría seleccionada no existe.';
+            } else {
+                $location->setPrimaryCategory($category);
+            }
+        } else {
+            $location->setPrimaryCategory(null);
         }
 
         $sourceType = $request->request->getString('source_type', MerchantLocation::SOURCE_TYPE_OWNER_REGISTERED);
