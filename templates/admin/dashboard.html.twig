@@ -119,6 +119,23 @@
                     </a>
                 </div>
             </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Centro legal</p>
+                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Documentos y cookies</h2>
+                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
+                    Edita privacidad, cookies, términos, comunidad y disclaimers consumidos por Public.
+                </p>
+                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#eff6ff; color:#1d4ed8; font-size:0.78rem; font-weight:800;">
+                        {{ stats.legal_document_published_total }}/{{ stats.legal_document_total }} publicados
+                    </span>
+                </div>
+                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
+                    <a href="{{ path('admin_legal_documents_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                        Abrir legales
+                    </a>
+                </div>
+            </article>
         </section>
 
         <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem; background:#fff;">
@@ -153,6 +170,21 @@
                     <span style="display:block; color:#6b7280; font-size:0.8rem;">Fichas abiertas</span>
                     <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.locations_opened }}</strong>
                 </article>
+            </div>
+            <div style="margin-top:1rem; display:grid; gap:0.55rem;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Rollups persistidos</p>
+                {% if stats.analytics.latest_rollups is empty %}
+                    <p style="margin:0; color:#64748b;">Aún no hay rollups. Ejecuta <code>php bin/console app:analytics:rollup-daily --date=today</code> o programa el comando diario.</p>
+                {% else %}
+                    <div style="display:grid; gap:0.45rem;">
+                        {% for rollup in stats.analytics.latest_rollups %}
+                            <div style="display:flex; justify-content:space-between; gap:1rem; border:1px solid #e5e7eb; border-radius:12px; padding:0.55rem 0.7rem; color:#334155;">
+                                <span>{{ rollup.rollupDate|date('Y-m-d') }} · {{ rollup.sourceApp }} · {{ rollup.eventName }}</span>
+                                <strong>{{ rollup.eventCount }}</strong>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
         </section>
 

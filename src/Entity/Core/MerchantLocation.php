@@ -73,6 +73,12 @@ class MerchantLocation
     #[ORM\Column]
     private bool $isClaimable = true;
 
+    #[ORM\Column(length: 24)]
+    private string $gemStatus = 'none';
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $gemReasonTags = null;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $claimedAt = null;
 
@@ -278,6 +284,39 @@ class MerchantLocation
         $this->isClaimable = $isClaimable;
 
         return $this;
+    }
+
+    public function getGemStatus(): string
+    {
+        return $this->gemStatus;
+    }
+
+    public function setGemStatus(string $gemStatus): self
+    {
+        if (!in_array($gemStatus, ['none', 'pending', 'approved', 'rejected'], true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported gem status "%s".', $gemStatus));
+        }
+
+        $this->gemStatus = $gemStatus;
+
+        return $this;
+    }
+
+    public function getGemReasonTags(): ?array
+    {
+        return $this->gemReasonTags;
+    }
+
+    public function setGemReasonTags(?array $gemReasonTags): self
+    {
+        $this->gemReasonTags = $gemReasonTags !== [] ? $gemReasonTags : null;
+
+        return $this;
+    }
+
+    public function isEditorialGem(): bool
+    {
+        return $this->gemStatus === 'approved';
     }
 
     public function isClaimable(): bool

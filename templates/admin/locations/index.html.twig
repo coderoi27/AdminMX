@@ -90,6 +90,9 @@
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.sourceType }}</span>
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #d1d5db; color:#374151; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.publicationState }}</span>
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#f8fafc; color:#475569; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.status }}</span>
+                                {% if location.gemStatus == 'approved' %}
+                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff7ed; color:#c2410c; font-size:0.76rem; font-weight:900; text-transform:uppercase;">Joyita</span>
+                                {% endif %}
                                 {% if location.primaryCategory %}
                                     <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ location.primaryCategory.colorHex ?: '#FFF7ED' }}; color:{{ location.primaryCategory.colorHex ? '#ffffff' : '#9a3412' }}; font-size:0.76rem; font-weight:800;">
                                         {{ location.primaryCategory.name }}

@@ -8,6 +8,8 @@ use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\LocationCategory;
 use App\Entity\Core\EventLog;
 use App\Entity\Core\LocationClaimRequest;
+use App\Entity\Core\LegalDocument;
+use App\Entity\Core\MetricRollupDaily;
 use App\Entity\Core\PublicInvitation;
 use App\Entity\Core\SystemPlugin;
 use Doctrine\DBAL\Exception;
@@ -31,6 +33,8 @@ final class DashboardController extends AbstractController
         $allCategories = $categoryRepository->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']);
         $eventLogs = $eventLogRepository->findBy([], ['id' => 'DESC'], 800);
         $claims = $entityManager->getRepository(LocationClaimRequest::class)->findBy([], ['id' => 'DESC']);
+        $legalDocuments = $entityManager->getRepository(LegalDocument::class)->findBy([], ['sortOrder' => 'ASC']);
+        $latestRollups = $entityManager->getRepository(MetricRollupDaily::class)->findBy([], ['rollupDate' => 'DESC', 'eventCount' => 'DESC'], 12);
 
         $selectedSourceType = $request->query->getString('source_type', '');
         $selectedPublicationState = $request->query->getString('publication_state', '');
@@ -104,6 +108,11 @@ final class DashboardController extends AbstractController
                 $claims,
                 static fn (LocationClaimRequest $claim): bool => $claim->getStatus() === LocationClaimRequest::STATUS_PENDING
             )),
+            'legal_document_total' => count($legalDocuments),
+            'legal_document_published_total' => count(array_filter(
+                $legalDocuments,
+                static fn (LegalDocument $document): bool => $document->getStatus() === LegalDocument::STATUS_PUBLISHED
+            )),
             'analytics' => [
                 'favorites_added' => $this->countEvents($eventLogs, 'public_favorite_added'),
                 'directions_clicked' => $this->countEvents($eventLogs, 'public_directions_clicked'),
@@ -111,6 +120,7 @@ final class DashboardController extends AbstractController
                 'claims_started' => $this->countEvents($eventLogs, 'public_claim_started'),
                 'addresses_saved' => $this->countEvents($eventLogs, 'public_address_saved'),
                 'locations_opened' => $this->countEvents($eventLogs, 'public_location_opened'),
+                'latest_rollups' => $latestRollups,
             ],
         ];
 

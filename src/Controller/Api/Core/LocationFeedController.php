@@ -55,6 +55,9 @@ final class LocationFeedController extends AbstractController
                     'source_type' => $location->getSourceType(),
                     'external_source_key' => $location->getExternalSourceKey(),
                     'publication_state' => $location->getPublicationState(),
+                    'gem_status' => $location->getGemStatus(),
+                    'is_joyita' => $location->isEditorialGem(),
+                    'gem_reason_tags' => $location->getGemReasonTags() ?? [],
                     'category_id' => $location->getPrimaryCategory()?->getId(),
                     'category_slug' => $location->getPrimaryCategory()?->getSlug(),
                     'category_name' => $location->getPrimaryCategory()?->getName(),
@@ -66,6 +69,7 @@ final class LocationFeedController extends AbstractController
             },
             $locations
         );
+        $data = $this->deduplicateLocations($data);
 
         return $this->json([
             'data' => $data,
@@ -77,6 +81,7 @@ final class LocationFeedController extends AbstractController
                     'source_type' => MerchantLocation::sourceTypes(),
                     'publication_state' => MerchantLocation::publicationStates(),
                     'dedup_priority' => ['owner_registered', 'claimed', 'admin_curated', 'fake_seed', 'google_places'],
+                    'favorites_policy' => 'Solo locales canónicos Mi Monchis con location_id estable pueden guardarse como favoritos. Google Places se puede reclamar antes de volverse favorito.',
                 ],
                 'category_catalog' => array_map(
                     static fn (LocationCategory $category): array => [
@@ -112,5 +117,65 @@ final class LocationFeedController extends AbstractController
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return (int) round($earthRadius * $c);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $locations
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function deduplicateLocations(array $locations): array
+    {
+        $ranked = [];
+        foreach ($locations as $location) {
+            $dedupKey = $this->dedupKey($location);
+            $existing = $ranked[$dedupKey] ?? null;
+
+            if ($existing === null || $this->sourcePriority((string) $location['source_type']) < $this->sourcePriority((string) $existing['source_type'])) {
+                $location['deduped_from_count'] = isset($existing['deduped_from_count']) ? ((int) $existing['deduped_from_count']) + 1 : 0;
+                $ranked[$dedupKey] = $location;
+            } elseif ($existing !== null) {
+                $ranked[$dedupKey]['deduped_from_count'] = ((int) ($ranked[$dedupKey]['deduped_from_count'] ?? 0)) + 1;
+            }
+        }
+
+        return array_values($ranked);
+    }
+
+    /**
+     * @param array<string, mixed> $location
+     */
+    private function dedupKey(array $location): string
+    {
+        if (!empty($location['external_source_key'])) {
+            return sprintf('external:%s', (string) $location['external_source_key']);
+        }
+
+        $name = $this->normalizeText((string) ($location['location_name'] ?? ''));
+        $address = $this->normalizeText((string) ($location['short_address'] ?? ''));
+        $lat = is_numeric($location['lat'] ?? null) ? round((float) $location['lat'], 4) : 'na';
+        $lng = is_numeric($location['lng'] ?? null) ? round((float) $location['lng'], 4) : 'na';
+
+        return sprintf('physical:%s|%s|%s|%s', $name, $address, $lat, $lng);
+    }
+
+    private function normalizeText(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = preg_replace('/[^a-z0-9]+/u', ' ', $value) ?? '';
+
+        return trim($value);
+    }
+
+    private function sourcePriority(string $sourceType): int
+    {
+        return match ($sourceType) {
+            MerchantLocation::SOURCE_TYPE_OWNER_REGISTERED => 10,
+            MerchantLocation::SOURCE_TYPE_CLAIMED => 20,
+            MerchantLocation::SOURCE_TYPE_ADMIN_CURATED => 30,
+            MerchantLocation::SOURCE_TYPE_FAKE_SEED => 40,
+            MerchantLocation::SOURCE_TYPE_GOOGLE_PLACES => 50,
+            default => 99,
+        };
     }
 }

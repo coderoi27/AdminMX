@@ -107,6 +107,7 @@ final class CanonicalLocationCrudController extends AbstractController
                 'publication_states' => MerchantLocation::publicationStates(),
                 'location_types' => ['fixed', 'mobile'],
                 'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+                'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
                 'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
                 'is_edit' => false,
                 'merchant_name' => $request->request->getString('merchant_name', ''),
@@ -122,6 +123,7 @@ final class CanonicalLocationCrudController extends AbstractController
             'publication_states' => MerchantLocation::publicationStates(),
             'location_types' => ['fixed', 'mobile'],
             'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+            'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'is_edit' => false,
             'merchant_name' => '',
@@ -157,6 +159,7 @@ final class CanonicalLocationCrudController extends AbstractController
                 'publication_states' => MerchantLocation::publicationStates(),
                 'location_types' => ['fixed', 'mobile'],
                 'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+                'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
                 'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
                 'is_edit' => true,
                 'merchant_name' => $location->getMerchant()->getName(),
@@ -172,6 +175,7 @@ final class CanonicalLocationCrudController extends AbstractController
             'publication_states' => MerchantLocation::publicationStates(),
             'location_types' => ['fixed', 'mobile'],
             'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
+            'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'is_edit' => true,
             'merchant_name' => $location->getMerchant()->getName(),
@@ -269,6 +273,14 @@ final class CanonicalLocationCrudController extends AbstractController
         $location->setWhatsappEnabled($request->request->getBoolean('whatsapp_enabled', false));
         $location->setShortDescription($this->normalizeNullableField($request->request->getString('short_description', '')));
         $location->setIsClaimable($request->request->getBoolean('is_claimable', true));
+
+        $gemStatus = $request->request->getString('gem_status', 'none');
+        if (!in_array($gemStatus, ['none', 'pending', 'approved', 'rejected'], true)) {
+            $errors[] = 'El estado Joyita no es válido.';
+        } else {
+            $location->setGemStatus($gemStatus);
+        }
+        $location->setGemReasonTags($this->normalizeTags($request->request->getString('gem_reason_tags', '')));
 
         $countryCode = strtoupper(trim($request->request->getString('country_code', 'MX')));
         if ($countryCode === '' || strlen($countryCode) !== 2) {
@@ -369,5 +381,15 @@ final class CanonicalLocationCrudController extends AbstractController
         $value = trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    private function normalizeTags(string $value): ?array
+    {
+        $tags = array_values(array_filter(array_map(
+            static fn (string $tag): string => trim($tag),
+            explode(',', $value)
+        ), static fn (string $tag): bool => $tag !== ''));
+
+        return $tags === [] ? null : $tags;
     }
 }

@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Documentos legales | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1040px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-bottom:1rem; border-radius:14px; padding:0.9rem 1rem; background:{{ label == 'error' ? '#fff1f2' : '#eff6ff' }}; color:{{ label == 'error' ? '#be123c' : '#1d4ed8' }};">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Centro legal</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Documentos legales</h1>
+                <p style="margin:0.55rem 0 0; color:#4b5563; line-height:1.6;">Fuente editable para páginas legales, footer público y microcopy de privacidad.</p>
+            </div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">Dashboard</a>
+                <a href="{{ path('admin_legal_documents_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">Nuevo documento</a>
+            </div>
+        </div>
+
+        <section style="margin-top:1.5rem; display:grid; gap:0.9rem;">
+            {% for document in documents %}
+                <article style="display:grid; gap:0.75rem; border:1px solid #e5e7eb; border-radius:18px; padding:1.05rem 1.15rem; background:#fff;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                        <div>
+                            <strong style="display:block; color:#111827; font-size:1.05rem;">{{ document.title }}</strong>
+                            <span style="display:block; color:#6b7280; margin-top:0.2rem;">/{{ document.slug }} · {{ document.versionLabel }}</span>
+                        </div>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ document.status == 'published' ? '#dcfce7' : '#f3f4f6' }}; color:{{ document.status == 'published' ? '#166534' : '#4b5563' }}; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ document.status }}</span>
+                            {% if document.showInFooter %}
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff7ed; color:#9a3412; font-size:0.76rem; font-weight:800;">Footer</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if document.summary %}
+                        <p style="margin:0; color:#4b5563; line-height:1.55;">{{ document.summary }}</p>
+                    {% endif %}
+                    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <a href="{{ path('admin_legal_documents_edit', { id: document.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff2e6; color:#c2410c; text-decoration:none; font-weight:700;">Editar</a>
+                        <form method="post" action="{{ path('admin_legal_documents_archive', { id: document.id }) }}" onsubmit="return confirm('¿Archivar este documento?');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('archive_legal_document_' ~ document.id) }}">
+                            <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#fef2f2; color:#b91c1c; font-weight:700;">Archivar</button>
+                        </form>
+                    </div>
+                </article>
+            {% else %}
+                <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
+                    <strong>No hay documentos legales.</strong>
+                    <p style="margin:0.4rem 0 0; color:#6b7280;">Crea el primer documento para publicarlo en la webapp.</p>
+                </article>
+            {% endfor %}
+        </section>
+    </main>
+{% endblock %}
