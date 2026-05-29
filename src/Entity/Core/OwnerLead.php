@@ -171,15 +171,7 @@ class OwnerLead
         return $this->message;
     }
 
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
 
-    public function getCity(): string
-    {
-        return $this->city;
-    }
 
     public function getCreatedAt(): \DateTimeImmutable
     {

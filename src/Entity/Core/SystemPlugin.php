@@ -14,6 +14,7 @@ use Doctrine\ORM\Mapping as ORM;
 class SystemPlugin
 {
     public const DEMO_SEED_LOCATIONS = 'demo_seed_locations';
+    public const GOOGLE_PLACES_PROXY = 'google_places_proxy';
 
     public const STATUS_ACTIVE = 'active';
     public const STATUS_DISABLED = 'disabled';

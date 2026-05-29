@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Error operativo | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main class="admin-error-page">
+        <section class="admin-error-page__card">
+            <p class="admin-error-page__eyebrow">Admin Mi Monchis MX</p>
+            <h1>No pudimos completar la operación</h1>
+            <p>
+                La consola tuvo un problema temporal. En producción ocultamos detalles técnicos para proteger la plataforma.
+                Revisa logs del servidor o reproduce el caso en local con `APP_DEBUG=1`.
+            </p>
+            <div class="admin-error-page__meta">
+                <span>Error {{ status_code|default(500) }}</span>
+                <span>{{ status_text|default('Error interno') }}</span>
+            </div>
+            <div class="admin-error-page__actions">
+                <a href="{{ path('admin_dashboard') }}">Volver al dashboard</a>
+                <a href="{{ path('admin_login') }}">Iniciar sesión</a>
+            </div>
+        </section>
+    </main>
+{% endblock %}

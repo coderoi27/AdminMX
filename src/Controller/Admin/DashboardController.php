@@ -85,6 +85,15 @@ final class DashboardController extends AbstractController
             $demoPlugin = null;
         }
 
+        $googlePlacesPlugin = null;
+        try {
+            $googlePlacesPlugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy([
+                'pluginKey' => SystemPlugin::GOOGLE_PLACES_PROXY,
+            ]);
+        } catch (Exception) {
+            $googlePlacesPlugin = null;
+        }
+
         $stats = [
             'public_invitation_total' => count($publicInvitations),
             'public_invitation_sent' => count(array_filter($publicInvitations, static fn (PublicInvitation $invitation): bool => $invitation->getStatus() === 'sent')),
@@ -95,6 +104,7 @@ final class DashboardController extends AbstractController
             'locations_by_publication' => $locationStatsByPublication,
             'latest_locations' => $filteredLocations,
             'demo_plugin' => $demoPlugin,
+            'google_places_plugin' => $googlePlacesPlugin,
             'fake_seed_total' => count(array_filter(
                 $allLocations,
                 static fn (MerchantLocation $location): bool => $location->getSourceType() === MerchantLocation::SOURCE_TYPE_FAKE_SEED

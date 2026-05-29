@@ -6,6 +6,8 @@ namespace App\Controller\Api\Core;
 
 use App\Entity\Core\LocationCategory;
 use App\Entity\Core\MerchantLocation;
+use App\Entity\Core\SystemPlugin;
+use App\Entity\Core\GooglePlaceBlacklist;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +25,8 @@ final class LocationFeedController extends AbstractController
             50
         );
         $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
+        $googlePlacesPlugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::GOOGLE_PLACES_PROXY]);
+        $blacklistedPlaces = $entityManager->getRepository(GooglePlaceBlacklist::class)->findAll();
 
         $lat = $request->query->get('lat');
         $lng = $request->query->get('lng');
@@ -83,6 +87,13 @@ final class LocationFeedController extends AbstractController
                     'dedup_priority' => ['owner_registered', 'claimed', 'admin_curated', 'fake_seed', 'google_places'],
                     'favorites_policy' => 'Solo locales canónicos Mi Monchis con location_id estable pueden guardarse como favoritos. Google Places se puede reclamar antes de volverse favorito.',
                 ],
+                'plugins' => [
+                    'google_places_proxy' => $googlePlacesPlugin !== null && $googlePlacesPlugin->isEnabled(),
+                ],
+                'google_places_blacklist' => array_map(
+                    static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
+                    $blacklistedPlaces
+                ),
                 'category_catalog' => array_map(
                     static fn (LocationCategory $category): array => [
                         'id' => $category->getId(),

@@ -1,3 +1,81 @@
 body {
-    background-color: skyblue;
+    background-color: #f8fafc;
+}
+
+.admin-error-page {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1rem;
+    font-family: system-ui, sans-serif;
+    background: linear-gradient(135deg, #f8fafc, #eef2ff);
+}
+
+.admin-error-page__card {
+    width: min(100%, 560px);
+    display: grid;
+    gap: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 26px;
+    padding: 2rem;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+}
+
+.admin-error-page__eyebrow {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.admin-error-page h1 {
+    margin: 0;
+    color: #111827;
+    font-size: clamp(2rem, 6vw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+.admin-error-page p {
+    margin: 0;
+    color: #4b5563;
+    line-height: 1.65;
+}
+
+.admin-error-page__meta,
+.admin-error-page__actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.admin-error-page__meta span {
+    border-radius: 999px;
+    padding: 0.42rem 0.7rem;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.admin-error-page__actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.55rem;
+    border-radius: 999px;
+    padding: 0.65rem 1rem;
+    background: #111827;
+    color: #fff;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.admin-error-page__actions a:last-child {
+    background: #fff;
+    color: #374151;
+    border: 1px solid #d1d5db;
 }

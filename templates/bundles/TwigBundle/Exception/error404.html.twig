@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ruta no encontrada | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main class="admin-error-page">
+        <section class="admin-error-page__card">
+            <p class="admin-error-page__eyebrow">Error 404</p>
+            <h1>Esta ruta de Admin no existe</h1>
+            <p>Verifica la URL o vuelve al dashboard operativo.</p>
+            <div class="admin-error-page__actions">
+                <a href="{{ path('admin_dashboard') }}">Volver al dashboard</a>
+                <a href="{{ path('admin_login') }}">Iniciar sesión</a>
+            </div>
+        </section>
+    </main>
+{% endblock %}
