@@ -6,6 +6,7 @@ namespace App\Controller\Api\Core;
 
 use App\Entity\Core\LocationCategory;
 use App\Entity\Core\MerchantLocation;
+use App\Entity\Core\PlaceCategoryRule;
 use App\Entity\Core\SystemPlugin;
 use App\Entity\Core\GooglePlaceBlacklist;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,6 +28,7 @@ final class LocationFeedController extends AbstractController
         $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
         $googlePlacesPlugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::GOOGLE_PLACES_PROXY]);
         $blacklistedPlaces = $entityManager->getRepository(GooglePlaceBlacklist::class)->findAll();
+        $placeCategoryRules = $entityManager->getRepository(PlaceCategoryRule::class)->findBy(['isActive' => true], ['priority' => 'ASC', 'matchValue' => 'ASC']);
 
         $lat = $request->query->get('lat');
         $lng = $request->query->get('lng');
@@ -110,6 +112,16 @@ final class LocationFeedController extends AbstractController
                         'is_active' => $category->isActive(),
                     ],
                     $categories
+                ),
+                'place_category_rules' => array_map(
+                    static fn (PlaceCategoryRule $rule): array => [
+                        'id' => $rule->getId(),
+                        'category_id' => $rule->getCategory()?->getId(),
+                        'rule_type' => $rule->getRuleType(),
+                        'match_value' => $rule->getMatchValue(),
+                        'priority' => $rule->getPriority(),
+                    ],
+                    $placeCategoryRules
                 ),
             ],
             'errors' => [],
