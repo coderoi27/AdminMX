@@ -22,6 +22,7 @@ final class GooglePlaceBlacklistController extends AbstractController
 
         return $this->render('admin/blacklist/index.html.twig', [
             'items' => $items,
+            'match_types' => GooglePlaceBlacklist::matchTypes(),
         ]);
     }
 
@@ -29,21 +30,33 @@ final class GooglePlaceBlacklistController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager): RedirectResponse
     {
         $key = $request->request->get('external_source_key');
+        $matchType = $request->request->getString('match_type');
         $reason = $request->request->get('reason');
 
         if (is_string($key) && trim($key) !== '') {
-            $existing = $entityManager->getRepository(GooglePlaceBlacklist::class)->findOneBy(['externalSourceKey' => trim($key)]);
+            $normalizedKey = trim(mb_strtolower($key));
+            if (!in_array($matchType, GooglePlaceBlacklist::matchTypes(), true)) {
+                $matchType = $this->looksLikeGooglePlaceId($normalizedKey)
+                    ? GooglePlaceBlacklist::MATCH_TYPE_PLACE_ID
+                    : GooglePlaceBlacklist::MATCH_TYPE_NAME_KEYWORD;
+            }
+
+            $existing = $entityManager->getRepository(GooglePlaceBlacklist::class)->findOneBy([
+                'matchType' => $matchType,
+                'externalSourceKey' => $normalizedKey,
+            ]);
             if ($existing === null) {
                 $item = new GooglePlaceBlacklist();
-                $item->setExternalSourceKey(trim($key));
+                $item->setMatchType($matchType);
+                $item->setExternalSourceKey($normalizedKey);
                 $item->setReason(is_string($reason) ? trim($reason) : null);
                 
                 $entityManager->persist($item);
                 $entityManager->flush();
                 
-                $this->addFlash('success', 'Lugar bloqueado correctamente.');
+                $this->addFlash('success', 'Regla de bloqueo creada correctamente.');
             } else {
-                $this->addFlash('warning', 'Ese lugar ya estaba bloqueado.');
+                $this->addFlash('warning', 'Esa regla ya existía.');
             }
         }
 
@@ -61,5 +74,10 @@ final class GooglePlaceBlacklistController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_blacklist_index');
+    }
+
+    private function looksLikeGooglePlaceId(string $value): bool
+    {
+        return str_starts_with($value, 'places/chij') || str_starts_with($value, 'chij');
     }
 }

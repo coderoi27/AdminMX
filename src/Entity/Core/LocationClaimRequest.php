@@ -201,6 +201,10 @@ class LocationClaimRequest
             throw new \InvalidArgumentException(sprintf('Unsupported claim status "%s".', $status));
         }
 
+        if (!$this->canTransitionTo($status)) {
+            throw new \InvalidArgumentException(sprintf('Invalid claim status transition "%s" -> "%s".', $this->status, $status));
+        }
+
         $this->status = $status;
 
         return $this;
@@ -240,6 +244,28 @@ class LocationClaimRequest
             self::STATUS_REVIEWING,
             self::STATUS_APPROVED,
             self::STATUS_REJECTED,
+        ];
+    }
+
+    public function canTransitionTo(string $status): bool
+    {
+        if ($status === $this->status || $this->id === null) {
+            return true;
+        }
+
+        return in_array($status, self::statusTransitions()[$this->status] ?? [], true);
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public static function statusTransitions(): array
+    {
+        return [
+            self::STATUS_PENDING => [self::STATUS_REVIEWING, self::STATUS_REJECTED],
+            self::STATUS_REVIEWING => [self::STATUS_APPROVED, self::STATUS_REJECTED],
+            self::STATUS_APPROVED => [],
+            self::STATUS_REJECTED => [self::STATUS_REVIEWING],
         ];
     }
 }

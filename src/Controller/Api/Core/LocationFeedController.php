@@ -9,6 +9,7 @@ use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\PlaceCategoryRule;
 use App\Entity\Core\SystemPlugin;
 use App\Entity\Core\GooglePlaceBlacklist;
+use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,9 +27,9 @@ final class LocationFeedController extends AbstractController
             50
         );
         $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
-        $googlePlacesPlugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::GOOGLE_PLACES_PROXY]);
-        $blacklistedPlaces = $entityManager->getRepository(GooglePlaceBlacklist::class)->findAll();
-        $placeCategoryRules = $entityManager->getRepository(PlaceCategoryRule::class)->findBy(['isActive' => true], ['priority' => 'ASC', 'matchValue' => 'ASC']);
+        $googlePlacesPlugin = $this->findGooglePlacesPlugin($entityManager);
+        $blacklistedPlaces = $this->findGooglePlaceBlacklist($entityManager);
+        $placeCategoryRules = $this->findPlaceCategoryRules($entityManager);
 
         $lat = $request->query->get('lat');
         $lng = $request->query->get('lng');
@@ -94,6 +95,24 @@ final class LocationFeedController extends AbstractController
                 ],
                 'google_places_blacklist' => array_map(
                     static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
+                    array_values(array_filter(
+                        $blacklistedPlaces,
+                        static fn (GooglePlaceBlacklist $item): bool => $item->getMatchType() === GooglePlaceBlacklist::MATCH_TYPE_PLACE_ID
+                    ))
+                ),
+                'google_places_blacklist_name_keywords' => array_map(
+                    static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
+                    array_values(array_filter(
+                        $blacklistedPlaces,
+                        static fn (GooglePlaceBlacklist $item): bool => $item->getMatchType() === GooglePlaceBlacklist::MATCH_TYPE_NAME_KEYWORD
+                    ))
+                ),
+                'google_places_blacklist_rules' => array_map(
+                    static fn (GooglePlaceBlacklist $item): array => [
+                        'match_type' => $item->getMatchType(),
+                        'match_value' => $item->getExternalSourceKey(),
+                        'reason' => $item->getReason(),
+                    ],
                     $blacklistedPlaces
                 ),
                 'category_catalog' => array_map(
@@ -126,6 +145,45 @@ final class LocationFeedController extends AbstractController
             ],
             'errors' => [],
         ]);
+    }
+
+    private function findGooglePlacesPlugin(EntityManagerInterface $entityManager): ?SystemPlugin
+    {
+        try {
+            $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::GOOGLE_PLACES_PROXY]);
+
+            return $plugin instanceof SystemPlugin ? $plugin : null;
+        } catch (DbalException|\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @return list<GooglePlaceBlacklist>
+     */
+    private function findGooglePlaceBlacklist(EntityManagerInterface $entityManager): array
+    {
+        try {
+            $items = $entityManager->getRepository(GooglePlaceBlacklist::class)->findAll();
+
+            return array_values(array_filter($items, static fn (mixed $item): bool => $item instanceof GooglePlaceBlacklist));
+        } catch (DbalException|\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @return list<PlaceCategoryRule>
+     */
+    private function findPlaceCategoryRules(EntityManagerInterface $entityManager): array
+    {
+        try {
+            $rules = $entityManager->getRepository(PlaceCategoryRule::class)->findBy(['isActive' => true], ['priority' => 'ASC', 'matchValue' => 'ASC']);
+
+            return array_values(array_filter($rules, static fn (mixed $rule): bool => $rule instanceof PlaceCategoryRule));
+        } catch (DbalException|\Throwable) {
+            return [];
+        }
     }
 
     private static function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): int

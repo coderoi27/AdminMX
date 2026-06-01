@@ -43,6 +43,11 @@ final class ClaimRequestController extends AbstractController
 
             return $this->redirectToRoute('admin_claims_index');
         }
+        if (!$claim->canTransitionTo($status)) {
+            $this->addFlash('error', sprintf('La transición del claim %s -> %s no está permitida.', $claim->getStatus(), $status));
+
+            return $this->redirectToRoute('admin_claims_index');
+        }
 
         $claim
             ->setStatus($status)
@@ -82,13 +87,26 @@ final class ClaimRequestController extends AbstractController
 
         $location
             ->setSourceType(MerchantLocation::SOURCE_TYPE_CLAIMED)
-            ->setPublicationState(MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE)
-            ->setStatus('active')
+            ->setStatus(MerchantLocation::STATUS_ACTIVE)
             ->setIsClaimable(false)
             ->setClaimedAt(new \DateTimeImmutable())
             ->setExternalSourceKey($claim->getExternalSourceKey());
+        $this->publishClaimedLocation($location);
 
         $claim->setCanonicalLocationId($location->getId());
+    }
+
+    private function publishClaimedLocation(MerchantLocation $location): void
+    {
+        if ($location->getPublicationState() === MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE) {
+            return;
+        }
+
+        if ($location->getPublicationState() === MerchantLocation::PUBLICATION_STATE_HIDDEN) {
+            $location->setPublicationState(MerchantLocation::PUBLICATION_STATE_PENDING_VISIBLE);
+        }
+
+        $location->setPublicationState(MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE);
     }
 
     private function createCanonicalLocationFromClaim(LocationClaimRequest $claim, EntityManagerInterface $entityManager): MerchantLocation
@@ -107,7 +125,7 @@ final class ClaimRequestController extends AbstractController
             ->setName($merchantName !== '' ? $merchantName : 'Local reclamado')
             ->setSlug($this->nextAvailableLocationSlug($entityManager, $baseSlug))
             ->setLocationType('fixed')
-            ->setStatus('active')
+            ->setStatus(MerchantLocation::STATUS_ACTIVE)
             ->setPublicationState(MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE)
             ->setSourceType(MerchantLocation::SOURCE_TYPE_CLAIMED)
             ->setExternalSourceKey($claim->getExternalSourceKey())

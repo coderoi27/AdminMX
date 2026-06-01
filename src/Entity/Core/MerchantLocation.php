@@ -13,6 +13,12 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class MerchantLocation
 {
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_PENDING_REVIEW = 'pending_review';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_INACTIVE = 'inactive';
+    public const STATUS_SUSPENDED = 'suspended';
+
     public const SOURCE_TYPE_OWNER_REGISTERED = 'owner_registered';
     public const SOURCE_TYPE_FAKE_SEED = 'fake_seed';
     public const SOURCE_TYPE_GOOGLE_PLACES = 'google_places';
@@ -23,6 +29,11 @@ class MerchantLocation
     public const PUBLICATION_STATE_PENDING_VISIBLE = 'pending_visible';
     public const PUBLICATION_STATE_PUBLIC_VISIBLE = 'public_visible';
     public const PUBLICATION_STATE_ARCHIVED = 'archived';
+
+    public const GEM_STATUS_NONE = 'none';
+    public const GEM_STATUS_PENDING = 'pending';
+    public const GEM_STATUS_APPROVED = 'approved';
+    public const GEM_STATUS_REJECTED = 'rejected';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -43,10 +54,10 @@ class MerchantLocation
     private string $locationType = 'fixed';
 
     #[ORM\Column(length: 32)]
-    private string $status = 'draft';
+    private string $status = self::STATUS_DRAFT;
 
     #[ORM\Column(length: 32)]
-    private string $publicationState = 'hidden';
+    private string $publicationState = self::PUBLICATION_STATE_HIDDEN;
 
     #[ORM\Column(length: 32)]
     private string $sourceType = self::SOURCE_TYPE_OWNER_REGISTERED;
@@ -74,7 +85,7 @@ class MerchantLocation
     private bool $isClaimable = true;
 
     #[ORM\Column(length: 24)]
-    private string $gemStatus = 'none';
+    private string $gemStatus = self::GEM_STATUS_NONE;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $gemReasonTags = null;
@@ -165,6 +176,10 @@ class MerchantLocation
 
     public function setStatus(string $status): self
     {
+        if (!in_array($status, self::statuses(), true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported location status "%s".', $status));
+        }
+
         $this->status = $status;
 
         return $this;
@@ -184,6 +199,10 @@ class MerchantLocation
     {
         if (!in_array($publicationState, self::publicationStates(), true)) {
             throw new \InvalidArgumentException(sprintf('Unsupported publication state "%s".', $publicationState));
+        }
+
+        if (!$this->canTransitionPublicationStateTo($publicationState)) {
+            throw new \InvalidArgumentException(sprintf('Invalid publication state transition "%s" -> "%s".', $this->publicationState, $publicationState));
         }
 
         $this->publicationState = $publicationState;
@@ -293,8 +312,12 @@ class MerchantLocation
 
     public function setGemStatus(string $gemStatus): self
     {
-        if (!in_array($gemStatus, ['none', 'pending', 'approved', 'rejected'], true)) {
+        if (!in_array($gemStatus, self::gemStatuses(), true)) {
             throw new \InvalidArgumentException(sprintf('Unsupported gem status "%s".', $gemStatus));
+        }
+
+        if (!$this->canTransitionGemStatusTo($gemStatus)) {
+            throw new \InvalidArgumentException(sprintf('Invalid gem status transition "%s" -> "%s".', $this->gemStatus, $gemStatus));
         }
 
         $this->gemStatus = $gemStatus;
@@ -316,7 +339,7 @@ class MerchantLocation
 
     public function isEditorialGem(): bool
     {
-        return $this->gemStatus === 'approved';
+        return $this->gemStatus === self::GEM_STATUS_APPROVED;
     }
 
     public function isClaimable(): bool
@@ -362,6 +385,20 @@ class MerchantLocation
     /**
      * @return list<string>
      */
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_DRAFT,
+            self::STATUS_PENDING_REVIEW,
+            self::STATUS_ACTIVE,
+            self::STATUS_INACTIVE,
+            self::STATUS_SUSPENDED,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function sourceTypes(): array
     {
         return [
@@ -383,6 +420,63 @@ class MerchantLocation
             self::PUBLICATION_STATE_PENDING_VISIBLE,
             self::PUBLICATION_STATE_PUBLIC_VISIBLE,
             self::PUBLICATION_STATE_ARCHIVED,
+        ];
+    }
+
+    public function canTransitionPublicationStateTo(string $publicationState): bool
+    {
+        if ($publicationState === $this->publicationState || $this->id === null) {
+            return true;
+        }
+
+        return in_array($publicationState, self::publicationStateTransitions()[$this->publicationState] ?? [], true);
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public static function publicationStateTransitions(): array
+    {
+        return [
+            self::PUBLICATION_STATE_HIDDEN => [self::PUBLICATION_STATE_PENDING_VISIBLE, self::PUBLICATION_STATE_ARCHIVED],
+            self::PUBLICATION_STATE_PENDING_VISIBLE => [self::PUBLICATION_STATE_PUBLIC_VISIBLE, self::PUBLICATION_STATE_HIDDEN],
+            self::PUBLICATION_STATE_PUBLIC_VISIBLE => [self::PUBLICATION_STATE_HIDDEN, self::PUBLICATION_STATE_ARCHIVED],
+            self::PUBLICATION_STATE_ARCHIVED => [],
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function gemStatuses(): array
+    {
+        return [
+            self::GEM_STATUS_NONE,
+            self::GEM_STATUS_PENDING,
+            self::GEM_STATUS_APPROVED,
+            self::GEM_STATUS_REJECTED,
+        ];
+    }
+
+    public function canTransitionGemStatusTo(string $gemStatus): bool
+    {
+        if ($gemStatus === $this->gemStatus || $this->id === null) {
+            return true;
+        }
+
+        return in_array($gemStatus, self::gemStatusTransitions()[$this->gemStatus] ?? [], true);
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    public static function gemStatusTransitions(): array
+    {
+        return [
+            self::GEM_STATUS_NONE => [self::GEM_STATUS_PENDING],
+            self::GEM_STATUS_PENDING => [self::GEM_STATUS_APPROVED, self::GEM_STATUS_REJECTED, self::GEM_STATUS_NONE],
+            self::GEM_STATUS_APPROVED => [self::GEM_STATUS_NONE],
+            self::GEM_STATUS_REJECTED => [self::GEM_STATUS_PENDING, self::GEM_STATUS_NONE],
         ];
     }
 }

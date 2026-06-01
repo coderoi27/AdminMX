@@ -106,8 +106,8 @@ final class CanonicalLocationCrudController extends AbstractController
                 'source_types' => MerchantLocation::sourceTypes(),
                 'publication_states' => MerchantLocation::publicationStates(),
                 'location_types' => ['fixed', 'mobile'],
-                'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
-                'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
+                'status_types' => MerchantLocation::statuses(),
+                'gem_statuses' => MerchantLocation::gemStatuses(),
                 'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
                 'is_edit' => false,
                 'merchant_name' => $request->request->getString('merchant_name', ''),
@@ -122,8 +122,8 @@ final class CanonicalLocationCrudController extends AbstractController
             'source_types' => MerchantLocation::sourceTypes(),
             'publication_states' => MerchantLocation::publicationStates(),
             'location_types' => ['fixed', 'mobile'],
-            'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
-            'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
+            'status_types' => MerchantLocation::statuses(),
+            'gem_statuses' => MerchantLocation::gemStatuses(),
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'is_edit' => false,
             'merchant_name' => '',
@@ -158,8 +158,8 @@ final class CanonicalLocationCrudController extends AbstractController
                 'source_types' => MerchantLocation::sourceTypes(),
                 'publication_states' => MerchantLocation::publicationStates(),
                 'location_types' => ['fixed', 'mobile'],
-                'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
-                'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
+                'status_types' => MerchantLocation::statuses(),
+                'gem_statuses' => MerchantLocation::gemStatuses(),
                 'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
                 'is_edit' => true,
                 'merchant_name' => $location->getMerchant()->getName(),
@@ -174,8 +174,8 @@ final class CanonicalLocationCrudController extends AbstractController
             'source_types' => MerchantLocation::sourceTypes(),
             'publication_states' => MerchantLocation::publicationStates(),
             'location_types' => ['fixed', 'mobile'],
-            'status_types' => ['draft', 'pending_review', 'active', 'inactive', 'suspended'],
-            'gem_statuses' => ['none', 'pending', 'approved', 'rejected'],
+            'status_types' => MerchantLocation::statuses(),
+            'gem_statuses' => MerchantLocation::gemStatuses(),
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'is_edit' => true,
             'merchant_name' => $location->getMerchant()->getName(),
@@ -192,7 +192,7 @@ final class CanonicalLocationCrudController extends AbstractController
         }
 
         $location->setPublicationState(MerchantLocation::PUBLICATION_STATE_ARCHIVED);
-        $location->setStatus('inactive');
+        $location->setStatus(MerchantLocation::STATUS_INACTIVE);
         $entityManager->flush();
 
         $this->addFlash('info', sprintf('Local "%s" archivado correctamente.', $location->getName()));
@@ -250,6 +250,8 @@ final class CanonicalLocationCrudController extends AbstractController
         $publicationState = $request->request->getString('publication_state', MerchantLocation::PUBLICATION_STATE_HIDDEN);
         if (!in_array($publicationState, MerchantLocation::publicationStates(), true)) {
             $errors[] = 'El estado de publicación no es válido.';
+        } elseif (!$location->canTransitionPublicationStateTo($publicationState)) {
+            $errors[] = sprintf('La transición de publicación %s -> %s no está permitida.', $location->getPublicationState(), $publicationState);
         } else {
             $location->setPublicationState($publicationState);
         }
@@ -261,8 +263,8 @@ final class CanonicalLocationCrudController extends AbstractController
             $location->setLocationType($locationType);
         }
 
-        $status = $request->request->getString('status', 'draft');
-        if (!in_array($status, ['draft', 'pending_review', 'active', 'inactive', 'suspended'], true)) {
+        $status = $request->request->getString('status', MerchantLocation::STATUS_DRAFT);
+        if (!in_array($status, MerchantLocation::statuses(), true)) {
             $errors[] = 'El estado operativo no es válido.';
         } else {
             $location->setStatus($status);
@@ -274,9 +276,11 @@ final class CanonicalLocationCrudController extends AbstractController
         $location->setShortDescription($this->normalizeNullableField($request->request->getString('short_description', '')));
         $location->setIsClaimable($request->request->getBoolean('is_claimable', true));
 
-        $gemStatus = $request->request->getString('gem_status', 'none');
-        if (!in_array($gemStatus, ['none', 'pending', 'approved', 'rejected'], true)) {
+        $gemStatus = $request->request->getString('gem_status', MerchantLocation::GEM_STATUS_NONE);
+        if (!in_array($gemStatus, MerchantLocation::gemStatuses(), true)) {
             $errors[] = 'El estado Joyita no es válido.';
+        } elseif (!$location->canTransitionGemStatusTo($gemStatus)) {
+            $errors[] = sprintf('La transición Joyita %s -> %s no está permitida.', $location->getGemStatus(), $gemStatus);
         } else {
             $location->setGemStatus($gemStatus);
         }

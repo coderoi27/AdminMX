@@ -67,7 +67,7 @@ final class DemoSeedLocationGenerator
             $merchant
                 ->setName($merchantName)
                 ->setSlug($this->buildUniqueSlug($entityManager, Merchant::class, $merchantName))
-                ->setStatus('active')
+                ->setStatus(MerchantLocation::STATUS_ACTIVE)
                 ->setDescription($this->merchantDescription($batch, $category));
             $entityManager->persist($merchant);
 
@@ -78,7 +78,7 @@ final class DemoSeedLocationGenerator
                 ->setSlug($this->buildUniqueSlug($entityManager, MerchantLocation::class, $locationName))
                 ->setPrimaryCategory($category)
                 ->setLocationType('fixed')
-                ->setStatus('active')
+                ->setStatus(MerchantLocation::STATUS_ACTIVE)
                 ->setSourceType(MerchantLocation::SOURCE_TYPE_FAKE_SEED)
                 ->setPublicationState(MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE)
                 ->setShortDescription($this->locationDescription($batch, $category))
