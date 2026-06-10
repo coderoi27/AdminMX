@@ -30,6 +30,7 @@ final class LocationFeedController extends AbstractController
         $googlePlacesPlugin = $this->findGooglePlacesPlugin($entityManager);
         $blacklistedPlaces = $this->findGooglePlaceBlacklist($entityManager);
         $placeCategoryRules = $this->findPlaceCategoryRules($entityManager);
+        $claimedGooglePlaceIds = $this->findClaimedGooglePlaceIds($entityManager);
 
         $lat = $request->query->get('lat');
         $lng = $request->query->get('lng');
@@ -93,6 +94,10 @@ final class LocationFeedController extends AbstractController
                 'plugins' => [
                     'google_places_proxy' => $googlePlacesPlugin !== null && $googlePlacesPlugin->isEnabled(),
                 ],
+                'settings' => [
+                    'map' => $this->mapSettings($entityManager),
+                    'google_places_proxy' => $this->googlePlacesSettings($googlePlacesPlugin),
+                ],
                 'google_places_blacklist' => array_map(
                     static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
                     array_values(array_filter(
@@ -142,6 +147,7 @@ final class LocationFeedController extends AbstractController
                     ],
                     $placeCategoryRules
                 ),
+                'claimed_google_place_ids' => $claimedGooglePlaceIds,
             ],
             'errors' => [],
         ]);
@@ -156,6 +162,48 @@ final class LocationFeedController extends AbstractController
         } catch (DbalException|\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapSettings(EntityManagerInterface $entityManager): array
+    {
+        try {
+            $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => 'map_settings']);
+
+            return array_replace([
+                'default_zoom' => 18,
+                'focused_zoom' => 18,
+                'street_label_weight' => 'normal',
+            ], $plugin instanceof SystemPlugin ? ($plugin->getConfigJson() ?? []) : []);
+        } catch (DbalException|\Throwable) {
+            return [
+                'default_zoom' => 18,
+                'focused_zoom' => 18,
+                'street_label_weight' => 'normal',
+            ];
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function googlePlacesSettings(?SystemPlugin $plugin): array
+    {
+        return array_replace([
+            'nearby_radius_meters' => 1000,
+            'nearby_max_results' => 20,
+            'text_search_page_size' => 10,
+            'text_search_mode' => 'category_only',
+            'max_total_places' => 60,
+            'cache_ttl_seconds' => 300,
+            'empty_cache_ttl_seconds' => 60,
+            'include_photos' => true,
+            'include_ratings' => true,
+            'include_opening_hours' => true,
+            'include_service_attributes' => true,
+        ], $plugin instanceof SystemPlugin ? ($plugin->getConfigJson() ?? []) : []);
     }
 
     /**
@@ -181,6 +229,39 @@ final class LocationFeedController extends AbstractController
             $rules = $entityManager->getRepository(PlaceCategoryRule::class)->findBy(['isActive' => true], ['priority' => 'ASC', 'matchValue' => 'ASC']);
 
             return array_values(array_filter($rules, static fn (mixed $rule): bool => $rule instanceof PlaceCategoryRule));
+        } catch (DbalException|\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function findClaimedGooglePlaceIds(EntityManagerInterface $entityManager): array
+    {
+        try {
+            $rows = $entityManager->createQueryBuilder()
+                ->select('location.externalSourceKey AS external_source_key')
+                ->from(MerchantLocation::class, 'location')
+                ->where('location.externalSourceKey IS NOT NULL')
+                ->andWhere('location.externalSourceKey <> :empty')
+                ->andWhere('location.sourceType <> :googlePlaces')
+                ->andWhere('location.publicationState = :publicVisible')
+                ->setParameter('empty', '')
+                ->setParameter('googlePlaces', MerchantLocation::SOURCE_TYPE_GOOGLE_PLACES)
+                ->setParameter('publicVisible', MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE)
+                ->getQuery()
+                ->getArrayResult();
+
+            $placeIds = [];
+            foreach ($rows as $row) {
+                $placeId = is_string($row['external_source_key'] ?? null) ? trim($row['external_source_key']) : '';
+                if ($placeId !== '') {
+                    $placeIds[$placeId] = $placeId;
+                }
+            }
+
+            return array_values($placeIds);
         } catch (DbalException|\Throwable) {
             return [];
         }

@@ -9,6 +9,7 @@ use App\Entity\Core\PlaceCategoryRule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -25,9 +26,15 @@ final class SeedPlaceCategoryRulesCommand extends Command
         parent::__construct();
     }
 
+    protected function configure(): void
+    {
+        $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Preview the rules that would be created without writing to the database.');
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        $dryRun = (bool) $input->getOption('dry-run');
         $categories = $this->entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true]);
         if ($categories === []) {
             $io->warning('No active categories were found. Create canonical categories before seeding Places rules.');
@@ -37,10 +44,20 @@ final class SeedPlaceCategoryRulesCommand extends Command
 
         $created = 0;
         $skipped = 0;
+        $previewRows = [];
         foreach ($this->seedDefinitions() as $definition) {
             $category = $this->findCategory($categories, $definition['category_keywords']);
             if (!$category instanceof LocationCategory) {
                 $skipped += count($definition['rules']);
+                foreach ($definition['rules'] as $ruleDefinition) {
+                    $previewRows[] = [
+                        implode(', ', $definition['category_keywords']),
+                        '-',
+                        $ruleDefinition['rule_type'],
+                        $ruleDefinition['match_value'],
+                        'skip: categoria no encontrada',
+                    ];
+                }
                 continue;
             }
 
@@ -54,6 +71,26 @@ final class SeedPlaceCategoryRulesCommand extends Command
 
                 if ($existing instanceof PlaceCategoryRule) {
                     $skipped += 1;
+                    $previewRows[] = [
+                        $category->getName(),
+                        (string) $category->getSlug(),
+                        $ruleDefinition['rule_type'],
+                        $matchValue,
+                        'skip: ya existe',
+                    ];
+                    continue;
+                }
+
+                $previewRows[] = [
+                    $category->getName(),
+                    (string) $category->getSlug(),
+                    $ruleDefinition['rule_type'],
+                    $matchValue,
+                    $dryRun ? 'crear (dry-run)' : 'crear',
+                ];
+
+                if ($dryRun) {
+                    $created += 1;
                     continue;
                 }
 
@@ -67,6 +104,16 @@ final class SeedPlaceCategoryRulesCommand extends Command
                 $this->entityManager->persist($rule);
                 $created += 1;
             }
+        }
+
+        if ($previewRows !== []) {
+            $io->table(['Categoria', 'Slug', 'Tipo', 'Valor', 'Accion'], $previewRows);
+        }
+
+        if ($dryRun) {
+            $io->success(sprintf('Dry-run completed. Would create: %d. Skipped: %d.', $created, $skipped));
+
+            return Command::SUCCESS;
         }
 
         $this->entityManager->flush();

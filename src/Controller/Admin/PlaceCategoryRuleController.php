@@ -23,6 +23,7 @@ final class PlaceCategoryRuleController extends AbstractController
             'rules' => $entityManager->getRepository(PlaceCategoryRule::class)->findBy([], ['priority' => 'ASC', 'matchValue' => 'ASC']),
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']),
             'rule_types' => PlaceCategoryRule::ruleTypes(),
+            'google_place_types' => $this->googleFoodPlaceTypes(),
         ]);
     }
 
@@ -118,5 +119,46 @@ final class PlaceCategoryRuleController extends AbstractController
         $this->addFlash('success', 'Regla eliminada.');
 
         return $this->redirectToRoute('admin_place_category_rules_index');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function googleFoodPlaceTypes(): array
+    {
+        return [
+            'acai_shop',
+            'bakery',
+            'bar',
+            'bar_and_grill',
+            'barbecue_restaurant',
+            'breakfast_restaurant',
+            'brunch_restaurant',
+            'buffet_restaurant',
+            'burrito_restaurant',
+            'cafe',
+            'cafeteria',
+            'cake_shop',
+            'candy_store',
+            'chicken_restaurant',
+            'chicken_wings_restaurant',
+            'coffee_shop',
+            'dessert_restaurant',
+            'dessert_shop',
+            'diner',
+            'donut_shop',
+            'fast_food_restaurant',
+            'hamburger_restaurant',
+            'ice_cream_shop',
+            'juice_shop',
+            'mexican_restaurant',
+            'pizza_restaurant',
+            'restaurant',
+            'sandwich_shop',
+            'seafood_restaurant',
+            'steak_house',
+            'sushi_restaurant',
+            'taco_restaurant',
+        ];
     }
 }

@@ -19,7 +19,7 @@
 
         <section style="margin-top:1.5rem; border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
             <h2 style="margin:0 0 1rem; font-size:1.1rem; color:#111827;">Nueva regla</h2>
-            <form action="{{ path('admin_place_category_rules_new') }}" method="POST" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1rem; align-items:end;">
+            <form action="{{ path('admin_place_category_rules_new') }}" method="POST" data-place-rule-form style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1rem; align-items:end;">
                 <input type="hidden" name="_token" value="{{ csrf_token('create_place_category_rule') }}">
                 <label style="display:grid; gap:0.45rem;">
                     <span style="font-weight:700; color:#111827;">Categoría</span>
@@ -31,7 +31,7 @@
                 </label>
                 <label style="display:grid; gap:0.45rem;">
                     <span style="font-weight:700; color:#111827;">Tipo</span>
-                    <select name="rule_type" required style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    <select name="rule_type" required data-place-rule-type style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
                         {% for rule_type in rule_types %}
                             <option value="{{ rule_type }}">{{ rule_type }}</option>
                         {% endfor %}
@@ -39,7 +39,12 @@
                 </label>
                 <label style="display:grid; gap:0.45rem;">
                     <span style="font-weight:700; color:#111827;">Valor</span>
-                    <input type="text" name="match_value" required placeholder="taco_restaurant o taqueria" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    <select data-place-google-type-select style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                        {% for google_place_type in google_place_types %}
+                            <option value="{{ google_place_type }}">{{ google_place_type }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" name="match_value" required data-place-rule-match-value placeholder="taqueria o tacos" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
                 </label>
                 <label style="display:grid; gap:0.45rem;">
                     <span style="font-weight:700; color:#111827;">Prioridad</span>
@@ -105,4 +110,28 @@
             </table>
         </section>
     </main>
+    <script>
+        (() => {
+            const form = document.querySelector('[data-place-rule-form]');
+            if (!form) {
+                return;
+            }
+
+            const ruleType = form.querySelector('[data-place-rule-type]');
+            const matchValue = form.querySelector('[data-place-rule-match-value]');
+            const googleTypeSelect = form.querySelector('[data-place-google-type-select]');
+
+            const syncRuleValueControl = () => {
+                const usesGoogleType = ruleType.value === 'google_type';
+                googleTypeSelect.hidden = !usesGoogleType;
+                matchValue.hidden = usesGoogleType;
+                matchValue.value = usesGoogleType ? googleTypeSelect.value : matchValue.value;
+                matchValue.placeholder = usesGoogleType ? 'Selecciona un tipo de Google Places' : 'taqueria o tacos';
+            };
+
+            ruleType.addEventListener('change', syncRuleValueControl);
+            googleTypeSelect.addEventListener('change', syncRuleValueControl);
+            syncRuleValueControl();
+        })();
+    </script>
 {% endblock %}
