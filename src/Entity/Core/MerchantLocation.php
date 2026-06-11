@@ -102,9 +102,32 @@ class MerchantLocation
     #[ORM\OneToMany(mappedBy: 'location', targetEntity: PlaceAddress::class, cascade: ['persist'], orphanRemoval: true)]
     private Collection $addresses;
 
+    #[ORM\OneToOne(mappedBy: 'location', targetEntity: LocationServiceProfile::class, cascade: ['persist', 'remove'])]
+    private ?LocationServiceProfile $serviceProfile = null;
+
+    #[ORM\OneToMany(mappedBy: 'location', targetEntity: LocationOpeningHour::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['dayOfWeek' => 'ASC'])]
+    private Collection $openingHours;
+
+    #[ORM\OneToMany(mappedBy: 'location', targetEntity: LocationOpeningException::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['exceptionDate' => 'ASC'])]
+    private Collection $openingExceptions;
+
+    #[ORM\OneToMany(mappedBy: 'location', targetEntity: LocationMediaItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['sortOrder' => 'ASC'])]
+    private Collection $mediaItems;
+
+    #[ORM\OneToMany(mappedBy: 'location', targetEntity: LocationSocialLink::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['sortOrder' => 'ASC'])]
+    private Collection $socialLinks;
+
     public function __construct()
     {
         $this->addresses = new ArrayCollection();
+        $this->openingHours = new ArrayCollection();
+        $this->openingExceptions = new ArrayCollection();
+        $this->mediaItems = new ArrayCollection();
+        $this->socialLinks = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -380,6 +403,167 @@ class MerchantLocation
         $firstAddress = $this->addresses->first();
 
         return $firstAddress instanceof PlaceAddress ? $firstAddress : null;
+    }
+
+    public function getServiceProfile(): ?LocationServiceProfile
+    {
+        return $this->serviceProfile;
+    }
+
+    public function setServiceProfile(?LocationServiceProfile $serviceProfile): self
+    {
+        $this->serviceProfile = $serviceProfile;
+        if ($serviceProfile instanceof LocationServiceProfile) {
+            $serviceProfile->setLocation($this);
+        }
+
+        return $this;
+    }
+
+    public function ensureServiceProfile(): LocationServiceProfile
+    {
+        if (!$this->serviceProfile instanceof LocationServiceProfile) {
+            $this->setServiceProfile(new LocationServiceProfile());
+        }
+
+        return $this->serviceProfile;
+    }
+
+    public function getOpeningHours(): Collection
+    {
+        return $this->openingHours;
+    }
+
+    public function addOpeningHour(LocationOpeningHour $openingHour): self
+    {
+        if (!$this->openingHours->contains($openingHour)) {
+            $this->openingHours->add($openingHour);
+            $openingHour->setLocation($this);
+        }
+
+        return $this;
+    }
+
+    public function getOpeningHourForDay(int $dayOfWeek): ?LocationOpeningHour
+    {
+        foreach ($this->openingHours as $openingHour) {
+            if ($openingHour instanceof LocationOpeningHour && $openingHour->getDayOfWeek() === $dayOfWeek) {
+                return $openingHour;
+            }
+        }
+
+        return null;
+    }
+
+    public function ensureOpeningHourForDay(int $dayOfWeek): LocationOpeningHour
+    {
+        $openingHour = $this->getOpeningHourForDay($dayOfWeek);
+        if ($openingHour instanceof LocationOpeningHour) {
+            return $openingHour;
+        }
+
+        $openingHour = (new LocationOpeningHour())->setDayOfWeek($dayOfWeek);
+        $this->addOpeningHour($openingHour);
+
+        return $openingHour;
+    }
+
+    public function getOpeningExceptions(): Collection
+    {
+        return $this->openingExceptions;
+    }
+
+    public function addOpeningException(LocationOpeningException $openingException): self
+    {
+        if (!$this->openingExceptions->contains($openingException)) {
+            $this->openingExceptions->add($openingException);
+            $openingException->setLocation($this);
+        }
+
+        return $this;
+    }
+
+    public function getMediaItems(): Collection
+    {
+        return $this->mediaItems;
+    }
+
+    public function addMediaItem(LocationMediaItem $mediaItem): self
+    {
+        if (!$this->mediaItems->contains($mediaItem)) {
+            $this->mediaItems->add($mediaItem);
+            $mediaItem->setLocation($this);
+        }
+
+        return $this;
+    }
+
+    public function clearMediaItems(): self
+    {
+        $this->mediaItems->clear();
+
+        return $this;
+    }
+
+    public function getPrimaryMediaItem(): ?LocationMediaItem
+    {
+        foreach ($this->mediaItems as $mediaItem) {
+            if ($mediaItem instanceof LocationMediaItem && $mediaItem->isActive() && $mediaItem->isPrimary()) {
+                return $mediaItem;
+            }
+        }
+
+        foreach ($this->mediaItems as $mediaItem) {
+            if ($mediaItem instanceof LocationMediaItem && $mediaItem->isActive()) {
+                return $mediaItem;
+            }
+        }
+
+        return null;
+    }
+
+    public function getMediaItemByType(string $mediaType): ?LocationMediaItem
+    {
+        foreach ($this->mediaItems as $mediaItem) {
+            if ($mediaItem instanceof LocationMediaItem && $mediaItem->isActive() && $mediaItem->getMediaType() === $mediaType) {
+                return $mediaItem;
+            }
+        }
+
+        return null;
+    }
+
+    public function getSocialLinks(): Collection
+    {
+        return $this->socialLinks;
+    }
+
+    public function addSocialLink(LocationSocialLink $socialLink): self
+    {
+        if (!$this->socialLinks->contains($socialLink)) {
+            $this->socialLinks->add($socialLink);
+            $socialLink->setLocation($this);
+        }
+
+        return $this;
+    }
+
+    public function clearSocialLinks(): self
+    {
+        $this->socialLinks->clear();
+
+        return $this;
+    }
+
+    public function getSocialLinkByPlatform(string $platform): ?LocationSocialLink
+    {
+        foreach ($this->socialLinks as $socialLink) {
+            if ($socialLink instanceof LocationSocialLink && $socialLink->isActive() && $socialLink->getPlatform() === $platform) {
+                return $socialLink;
+            }
+        }
+
+        return null;
     }
 
     /**

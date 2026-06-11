@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Entity\Core\Merchant;
+use App\Entity\Core\LocationMediaItem;
+use App\Entity\Core\LocationSocialLink;
 use App\Entity\Core\LocationCategory;
 use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\PlaceAddress;
@@ -109,6 +111,7 @@ final class CanonicalLocationCrudController extends AbstractController
                 'status_types' => MerchantLocation::statuses(),
                 'gem_statuses' => MerchantLocation::gemStatuses(),
                 'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
+                'opening_day_labels' => $this->openingDayLabels(),
                 'is_edit' => false,
                 'merchant_name' => $request->request->getString('merchant_name', ''),
             ]);
@@ -125,6 +128,7 @@ final class CanonicalLocationCrudController extends AbstractController
             'status_types' => MerchantLocation::statuses(),
             'gem_statuses' => MerchantLocation::gemStatuses(),
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
+            'opening_day_labels' => $this->openingDayLabels(),
             'is_edit' => false,
             'merchant_name' => '',
         ]);
@@ -161,6 +165,7 @@ final class CanonicalLocationCrudController extends AbstractController
                 'status_types' => MerchantLocation::statuses(),
                 'gem_statuses' => MerchantLocation::gemStatuses(),
                 'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
+                'opening_day_labels' => $this->openingDayLabels(),
                 'is_edit' => true,
                 'merchant_name' => $location->getMerchant()->getName(),
             ]);
@@ -177,6 +182,7 @@ final class CanonicalLocationCrudController extends AbstractController
             'status_types' => MerchantLocation::statuses(),
             'gem_statuses' => MerchantLocation::gemStatuses(),
             'categories' => $entityManager->getRepository(LocationCategory::class)->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']),
+            'opening_day_labels' => $this->openingDayLabels(),
             'is_edit' => true,
             'merchant_name' => $location->getMerchant()->getName(),
         ]);
@@ -275,6 +281,8 @@ final class CanonicalLocationCrudController extends AbstractController
         $location->setWhatsappEnabled($request->request->getBoolean('whatsapp_enabled', false));
         $location->setShortDescription($this->normalizeNullableField($request->request->getString('short_description', '')));
         $location->setIsClaimable($request->request->getBoolean('is_claimable', true));
+        $this->hydrateServicesFromRequest($request, $location);
+        $this->hydrateMediaAndSocialFromRequest($request, $location, $errors);
 
         $gemStatus = $request->request->getString('gem_status', MerchantLocation::GEM_STATUS_NONE);
         if (!in_array($gemStatus, MerchantLocation::gemStatuses(), true)) {
@@ -323,7 +331,121 @@ final class CanonicalLocationCrudController extends AbstractController
             ));
         }
 
+        $this->hydrateOpeningHoursFromRequest($request, $location, $errors);
+
         return $errors;
+    }
+
+    private function hydrateServicesFromRequest(Request $request, MerchantLocation $location): void
+    {
+        $serviceProfile = $location->ensureServiceProfile();
+        $serviceProfile
+            ->setOffersDelivery($request->request->getBoolean('offers_delivery', false))
+            ->setOffersTakeaway($request->request->getBoolean('offers_takeaway', false))
+            ->setOffersDineIn($request->request->getBoolean('offers_dine_in', true))
+            ->setDeliveryNotes($this->normalizeNullableField($request->request->getString('delivery_notes', '')))
+            ->setServiceNotes($this->normalizeNullableField($request->request->getString('service_notes', '')));
+    }
+
+    /**
+     * @param list<string> $errors
+     */
+    private function hydrateMediaAndSocialFromRequest(Request $request, MerchantLocation $location, array &$errors): void
+    {
+        $mediaInputs = [
+            [
+                'media_type' => LocationMediaItem::TYPE_PHOTO,
+                'url' => $this->normalizeNullableField($request->request->getString('primary_photo_url', '')),
+                'title' => 'Foto principal',
+                'sort_order' => 10,
+                'is_primary' => true,
+            ],
+            [
+                'media_type' => LocationMediaItem::TYPE_LOGO,
+                'url' => $this->normalizeNullableField($request->request->getString('logo_url', '')),
+                'title' => 'Logo',
+                'sort_order' => 20,
+                'is_primary' => false,
+            ],
+            [
+                'media_type' => LocationMediaItem::TYPE_MENU,
+                'url' => $this->normalizeNullableField($request->request->getString('menu_image_url', '')),
+                'title' => 'Menú',
+                'sort_order' => 30,
+                'is_primary' => false,
+            ],
+        ];
+
+        $location->clearMediaItems();
+        foreach ($mediaInputs as $mediaInput) {
+            if ($mediaInput['url'] === null) {
+                continue;
+            }
+            if (!$this->isValidUrl($mediaInput['url'])) {
+                $errors[] = sprintf('La URL de %s no es válida.', mb_strtolower($mediaInput['title']));
+                continue;
+            }
+
+            $location->addMediaItem((new LocationMediaItem())
+                ->setMediaType($mediaInput['media_type'])
+                ->setUrl($mediaInput['url'])
+                ->setTitle($mediaInput['title'])
+                ->setAltText(sprintf('%s de %s', $mediaInput['title'], $location->getName()))
+                ->setSortOrder($mediaInput['sort_order'])
+                ->setIsPrimary($mediaInput['is_primary'])
+                ->setIsActive(true));
+        }
+
+        $socialInputs = [
+            LocationSocialLink::PLATFORM_INSTAGRAM => ['url' => $this->normalizeNullableField($request->request->getString('instagram_url', '')), 'label' => 'Instagram'],
+            LocationSocialLink::PLATFORM_FACEBOOK => ['url' => $this->normalizeNullableField($request->request->getString('facebook_url', '')), 'label' => 'Facebook'],
+            LocationSocialLink::PLATFORM_TIKTOK => ['url' => $this->normalizeNullableField($request->request->getString('tiktok_url', '')), 'label' => 'TikTok'],
+            LocationSocialLink::PLATFORM_WEBSITE => ['url' => $this->normalizeNullableField($request->request->getString('website_url', '')), 'label' => 'Sitio web'],
+            LocationSocialLink::PLATFORM_MENU => ['url' => $this->normalizeNullableField($request->request->getString('menu_url', '')), 'label' => 'Menú'],
+        ];
+
+        $location->clearSocialLinks();
+        $sortOrder = 10;
+        foreach ($socialInputs as $platform => $socialInput) {
+            if ($socialInput['url'] === null) {
+                continue;
+            }
+            if (!$this->isValidUrl($socialInput['url'])) {
+                $errors[] = sprintf('La URL de %s no es válida.', $socialInput['label']);
+                continue;
+            }
+
+            $location->addSocialLink((new LocationSocialLink())
+                ->setPlatform($platform)
+                ->setUrl($socialInput['url'])
+                ->setLabel($socialInput['label'])
+                ->setSortOrder($sortOrder)
+                ->setIsActive(true));
+            $sortOrder += 10;
+        }
+    }
+
+    /**
+     * @param list<string> $errors
+     */
+    private function hydrateOpeningHoursFromRequest(Request $request, MerchantLocation $location, array &$errors): void
+    {
+        foreach ($this->openingDayLabels() as $dayOfWeek => $label) {
+            $openingHour = $location->ensureOpeningHourForDay($dayOfWeek);
+            $isClosed = $request->request->getBoolean(sprintf('opening_closed_%d', $dayOfWeek), false);
+            $opensAt = $this->parseTime($request->request->getString(sprintf('opening_opens_%d', $dayOfWeek), ''));
+            $closesAt = $this->parseTime($request->request->getString(sprintf('opening_closes_%d', $dayOfWeek), ''));
+
+            if (!$isClosed && ($opensAt === null || $closesAt === null)) {
+                $errors[] = sprintf('Captura apertura y cierre para %s o márcalo como cerrado.', $label);
+                $isClosed = true;
+            }
+
+            $openingHour
+                ->setIsClosed($isClosed)
+                ->setOpensAt($isClosed ? null : $opensAt)
+                ->setClosesAt($isClosed ? null : $closesAt);
+        }
     }
 
     private function resolveMerchant(EntityManagerInterface $entityManager, string $merchantName): Merchant
@@ -395,5 +517,39 @@ final class CanonicalLocationCrudController extends AbstractController
         ), static fn (string $tag): bool => $tag !== ''));
 
         return $tags === [] ? null : $tags;
+    }
+
+    private function isValidUrl(string $url): bool
+    {
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function openingDayLabels(): array
+    {
+        return [
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábado',
+            7 => 'Domingo',
+        ];
+    }
+
+    private function parseTime(string $value): ?\DateTimeImmutable
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $time = \DateTimeImmutable::createFromFormat('!H:i', $value);
+
+        return $time instanceof \DateTimeImmutable ? $time : null;
     }
 }

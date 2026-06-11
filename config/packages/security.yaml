@@ -28,6 +28,7 @@ security:
     access_control:
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/locations/feed$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/locals/approved-claims$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/v1/public-invitations$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/v1/public-invitations/validate$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api, roles: ROLE_ADMIN }

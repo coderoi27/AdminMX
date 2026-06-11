@@ -54,6 +54,15 @@ class LocationClaimRequest
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $prefillPayloadJson = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $evidenceLinksJson = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $reviewChecklistJson = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $reviewNotes = null;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $reviewedAt = null;
 
@@ -222,11 +231,52 @@ class LocationClaimRequest
         return $this;
     }
 
+    public function getEvidenceLinksJson(): ?array
+    {
+        return $this->evidenceLinksJson;
+    }
+
+    public function setEvidenceLinksJson(?array $evidenceLinksJson): self
+    {
+        $this->evidenceLinksJson = $evidenceLinksJson;
+
+        return $this;
+    }
+
+    public function getReviewChecklistJson(): ?array
+    {
+        return $this->reviewChecklistJson;
+    }
+
+    public function setReviewChecklistJson(?array $reviewChecklistJson): self
+    {
+        $this->reviewChecklistJson = $reviewChecklistJson;
+
+        return $this;
+    }
+
+    public function getReviewNotes(): ?string
+    {
+        return $this->reviewNotes;
+    }
+
+    public function setReviewNotes(?string $reviewNotes): self
+    {
+        $this->reviewNotes = $reviewNotes;
+
+        return $this;
+    }
+
     public function setReviewedAt(?\DateTimeImmutable $reviewedAt): self
     {
         $this->reviewedAt = $reviewedAt;
 
         return $this;
+    }
+
+    public function getReviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

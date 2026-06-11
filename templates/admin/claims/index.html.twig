@@ -37,13 +37,38 @@
                             <span>{{ claim.email }}</span>
                             {% if claim.externalSourceKey %}<span>{{ claim.externalSourceKey }}</span>{% endif %}
                         </div>
-                        <form method="post" action="{{ path('admin_claims_status', { id: claim.id }) }}" style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                        {% set checklist = claim.reviewChecklistJson|default({}) %}
+                        <form method="post" action="{{ path('admin_claims_status', { id: claim.id }) }}" style="display:grid; gap:0.75rem;">
                             <input type="hidden" name="_token" value="{{ csrf_token('claim_status_' ~ claim.id) }}">
-                            {% for status in statuses %}
-                                <button type="submit" name="status" value="{{ status }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.1rem; border-radius:999px; padding:0.5rem 0.9rem; border:1px solid #d1d5db; background:{{ claim.status == status ? '#111827' : '#fff' }}; color:{{ claim.status == status ? '#fff' : '#374151' }}; font-weight:700;">
-                                    {{ status }}
-                                </button>
-                            {% endfor %}
+                            <label style="display:grid; gap:0.35rem; color:#374151; font-weight:700;">
+                                Evidencias del claim
+                                <textarea name="evidence_links" rows="3" placeholder="https://..." style="width:100%; border:1px solid #d1d5db; border-radius:12px; padding:0.75rem; font:inherit; color:#111827;">{% for item in claim.evidenceLinksJson|default([]) %}{{ item.url }}{% if not loop.last %}&#10;{% endif %}{% endfor %}</textarea>
+                            </label>
+                            <div style="display:flex; gap:0.8rem; flex-wrap:wrap; color:#374151; font-size:0.9rem;">
+                                <label style="display:inline-flex; align-items:center; gap:0.4rem;">
+                                    <input type="checkbox" name="check_contact_verified" value="1" {{ checklist.contact_verified|default(false) ? 'checked' : '' }}>
+                                    Contacto verificado
+                                </label>
+                                <label style="display:inline-flex; align-items:center; gap:0.4rem;">
+                                    <input type="checkbox" name="check_ownership_evidence" value="1" {{ checklist.ownership_evidence|default(false) ? 'checked' : '' }}>
+                                    Evidencia de propiedad
+                                </label>
+                                <label style="display:inline-flex; align-items:center; gap:0.4rem;">
+                                    <input type="checkbox" name="check_location_match" value="1" {{ checklist.location_match|default(false) ? 'checked' : '' }}>
+                                    Coincide con el local
+                                </label>
+                            </div>
+                            <label style="display:grid; gap:0.35rem; color:#374151; font-weight:700;">
+                                Nota de revisión
+                                <textarea name="review_notes" rows="2" placeholder="Notas internas para operación" style="width:100%; border:1px solid #d1d5db; border-radius:12px; padding:0.75rem; font:inherit; color:#111827;">{{ claim.reviewNotes }}</textarea>
+                            </label>
+                            <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                                {% for status in statuses %}
+                                    <button type="submit" name="status" value="{{ status }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.1rem; border-radius:999px; padding:0.5rem 0.9rem; border:1px solid #d1d5db; background:{{ claim.status == status ? '#111827' : '#fff' }}; color:{{ claim.status == status ? '#fff' : '#374151' }}; font-weight:700;">
+                                        {{ status }}
+                                    </button>
+                                {% endfor %}
+                            </div>
                         </form>
                     </article>
                 {% endfor %}

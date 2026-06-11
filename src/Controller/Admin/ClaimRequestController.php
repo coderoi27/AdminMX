@@ -49,7 +49,26 @@ final class ClaimRequestController extends AbstractController
             return $this->redirectToRoute('admin_claims_index');
         }
 
+        $evidenceLinks = $this->evidenceLinksFromRequest($request);
+        $reviewChecklist = $this->reviewChecklistFromRequest($request);
+        $reviewNotes = $this->emptyToNull($request->request->getString('review_notes', ''));
+
+        if ($status === LocationClaimRequest::STATUS_APPROVED && ($evidenceLinks === [] || !$this->reviewChecklistIsComplete($reviewChecklist))) {
+            $this->addFlash('error', 'Para aprobar un claim necesitas al menos una evidencia y completar el checklist operativo.');
+
+            return $this->redirectToRoute('admin_claims_index');
+        }
+
+        if ($status === LocationClaimRequest::STATUS_REJECTED && $reviewNotes === null) {
+            $this->addFlash('error', 'Para rechazar un claim captura una nota de revisión.');
+
+            return $this->redirectToRoute('admin_claims_index');
+        }
+
         $claim
+            ->setEvidenceLinksJson($evidenceLinks !== [] ? $evidenceLinks : null)
+            ->setReviewChecklistJson($reviewChecklist)
+            ->setReviewNotes($reviewNotes)
             ->setStatus($status)
             ->setReviewedAt(new \DateTimeImmutable());
 
@@ -62,6 +81,54 @@ final class ClaimRequestController extends AbstractController
         $this->addFlash('success', 'Claim actualizado correctamente.');
 
         return $this->redirectToRoute('admin_claims_index');
+    }
+
+    /**
+     * @return list<array{url:string}>
+     */
+    private function evidenceLinksFromRequest(Request $request): array
+    {
+        $rawLinks = preg_split('/\R+/', $request->request->getString('evidence_links', '')) ?: [];
+        $links = [];
+        foreach ($rawLinks as $rawLink) {
+            $url = trim((string) $rawLink);
+            if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+                continue;
+            }
+            if (!in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+                continue;
+            }
+            $links[] = ['url' => $url];
+        }
+
+        return array_values(array_slice($links, 0, 12));
+    }
+
+    /**
+     * @return array{contact_verified:bool, ownership_evidence:bool, location_match:bool}
+     */
+    private function reviewChecklistFromRequest(Request $request): array
+    {
+        return [
+            'contact_verified' => $request->request->getBoolean('check_contact_verified', false),
+            'ownership_evidence' => $request->request->getBoolean('check_ownership_evidence', false),
+            'location_match' => $request->request->getBoolean('check_location_match', false),
+        ];
+    }
+
+    /**
+     * @param array{contact_verified:bool, ownership_evidence:bool, location_match:bool} $reviewChecklist
+     */
+    private function reviewChecklistIsComplete(array $reviewChecklist): bool
+    {
+        return $reviewChecklist['contact_verified'] && $reviewChecklist['ownership_evidence'] && $reviewChecklist['location_match'];
+    }
+
+    private function emptyToNull(string $value): ?string
+    {
+        $value = trim($value);
+
+        return $value !== '' ? $value : null;
     }
 
     private function materializeApprovedClaim(LocationClaimRequest $claim, EntityManagerInterface $entityManager): void

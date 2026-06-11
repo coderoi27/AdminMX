@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Api\Core;
 
 use App\Entity\Core\LocationCategory;
+use App\Entity\Core\LocationOpeningException;
+use App\Entity\Core\LocationOpeningHour;
 use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\PlaceCategoryRule;
 use App\Entity\Core\SystemPlugin;
@@ -21,11 +23,21 @@ final class LocationFeedController extends AbstractController
     #[Route('/api/v1/locations/feed', name: 'api_core_locations_feed', methods: ['GET'])]
     public function __invoke(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        $locations = $entityManager->getRepository(MerchantLocation::class)->findBy(
-            ['publicationState' => MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE],
-            ['id' => 'DESC'],
-            50
-        );
+        $locations = $entityManager->getRepository(MerchantLocation::class)->createQueryBuilder('location')
+            ->leftJoin('location.merchant', 'merchant')->addSelect('merchant')
+            ->leftJoin('location.primaryCategory', 'category')->addSelect('category')
+            ->leftJoin('location.addresses', 'address')->addSelect('address')
+            ->leftJoin('location.serviceProfile', 'serviceProfile')->addSelect('serviceProfile')
+            ->leftJoin('location.openingHours', 'openingHour')->addSelect('openingHour')
+            ->leftJoin('location.openingExceptions', 'openingException')->addSelect('openingException')
+            ->leftJoin('location.mediaItems', 'mediaItem')->addSelect('mediaItem')
+            ->leftJoin('location.socialLinks', 'socialLink')->addSelect('socialLink')
+            ->where('location.publicationState = :publicationState')
+            ->setParameter('publicationState', MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE)
+            ->orderBy('location.id', 'DESC')
+            ->setMaxResults(50)
+            ->getQuery()
+            ->getResult();
         $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
         $googlePlacesPlugin = $this->findGooglePlacesPlugin($entityManager);
         $blacklistedPlaces = $this->findGooglePlaceBlacklist($entityManager);
@@ -36,8 +48,11 @@ final class LocationFeedController extends AbstractController
         $lng = $request->query->get('lng');
 
         $data = array_map(
-            static function (MerchantLocation $location) use ($lat, $lng): array {
+            function (MerchantLocation $location) use ($lat, $lng): array {
                 $primaryAddress = $location->getAddresses()->first();
+                $serviceProfile = $location->getServiceProfile();
+                $availability = $this->canonicalAvailability($location);
+                $primaryMedia = $location->getPrimaryMediaItem();
 
                 $distanceMeters = null;
                 if ($primaryAddress !== false && $lat !== null && $lng !== null) {
@@ -51,6 +66,7 @@ final class LocationFeedController extends AbstractController
 
                 return [
                     'location_id' => $location->getId(),
+                    'location_slug' => $location->getSlug(),
                     'merchant_name' => $location->getMerchant()->getName(),
                     'location_name' => $location->getName(),
                     'lat' => $primaryAddress !== false ? (float) $primaryAddress->getLatitude() : null,
@@ -59,6 +75,18 @@ final class LocationFeedController extends AbstractController
                     'distance_meters' => $distanceMeters,
                     'whatsapp_enabled' => $location->isWhatsappEnabled(),
                     'whatsapp_e164' => $location->getWhatsappE164(),
+                    'service_delivery' => $serviceProfile?->offersDelivery() ?? false,
+                    'service_takeaway' => $serviceProfile?->offersTakeaway() ?? false,
+                    'service_dine_in' => $serviceProfile?->offersDineIn() ?? false,
+                    'service_delivery_notes' => $serviceProfile?->getDeliveryNotes(),
+                    'service_notes' => $serviceProfile?->getServiceNotes(),
+                    'photo_url' => $primaryMedia?->getUrl(),
+                    'media_items' => $this->mediaItemsPayload($location),
+                    'social_links' => $this->socialLinksPayload($location),
+                    'open_now' => $availability['open_now'],
+                    'business_status' => 'OPERATIONAL',
+                    'opening_hours_text' => $availability['opening_hours_text'],
+                    'availability_source' => $availability['source'],
                     'is_claimable' => $location->isClaimable(),
                     'source_type' => $location->getSourceType(),
                     'external_source_key' => $location->getExternalSourceKey(),
@@ -279,6 +307,152 @@ final class LocationFeedController extends AbstractController
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return (int) round($earthRadius * $c);
+    }
+
+    /**
+     * @return array{open_now: bool|null, opening_hours_text: list<string>, source: string}
+     */
+    private function canonicalAvailability(MerchantLocation $location): array
+    {
+        $timezone = new \DateTimeZone('America/Mexico_City');
+        $now = new \DateTimeImmutable('now', $timezone);
+        $today = $now->format('Y-m-d');
+        $todayException = null;
+
+        foreach ($location->getOpeningExceptions() as $exception) {
+            if ($exception instanceof LocationOpeningException && $exception->getExceptionDate()->format('Y-m-d') === $today) {
+                $todayException = $exception;
+                break;
+            }
+        }
+
+        $openingHoursText = $this->openingHoursText($location);
+
+        if ($todayException instanceof LocationOpeningException) {
+            return [
+                'open_now' => $this->scheduleEntryIsOpen($todayException, $now),
+                'opening_hours_text' => $openingHoursText,
+                'source' => 'canonical_exception',
+            ];
+        }
+
+        $openingHour = $location->getOpeningHourForDay((int) $now->format('N'));
+        if (!$openingHour instanceof LocationOpeningHour) {
+            return [
+                'open_now' => null,
+                'opening_hours_text' => $openingHoursText,
+                'source' => 'canonical_unavailable',
+            ];
+        }
+
+        return [
+            'open_now' => $this->scheduleEntryIsOpen($openingHour, $now),
+            'opening_hours_text' => $openingHoursText,
+            'source' => 'canonical_weekly',
+        ];
+    }
+
+    private function scheduleEntryIsOpen(LocationOpeningHour|LocationOpeningException $entry, \DateTimeImmutable $now): bool
+    {
+        if ($entry->isClosed() || $entry->getOpensAt() === null || $entry->getClosesAt() === null) {
+            return false;
+        }
+
+        $current = $now->format('H:i');
+        $opensAt = $entry->getOpensAt()->format('H:i');
+        $closesAt = $entry->getClosesAt()->format('H:i');
+
+        if ($opensAt === $closesAt) {
+            return true;
+        }
+
+        if ($opensAt < $closesAt) {
+            return $current >= $opensAt && $current < $closesAt;
+        }
+
+        return $current >= $opensAt || $current < $closesAt;
+    }
+
+    /**
+     * @return list<array{media_type:string, url:string, title:string|null, alt_text:string|null, is_primary:bool}>
+     */
+    private function mediaItemsPayload(MerchantLocation $location): array
+    {
+        $items = [];
+        foreach ($location->getMediaItems() as $mediaItem) {
+            if (!$mediaItem instanceof \App\Entity\Core\LocationMediaItem || !$mediaItem->isActive()) {
+                continue;
+            }
+
+            $items[] = [
+                'media_type' => $mediaItem->getMediaType(),
+                'url' => $mediaItem->getUrl(),
+                'title' => $mediaItem->getTitle(),
+                'alt_text' => $mediaItem->getAltText(),
+                'is_primary' => $mediaItem->isPrimary(),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array{platform:string, url:string, label:string|null}>
+     */
+    private function socialLinksPayload(MerchantLocation $location): array
+    {
+        $items = [];
+        foreach ($location->getSocialLinks() as $socialLink) {
+            if (!$socialLink instanceof \App\Entity\Core\LocationSocialLink || !$socialLink->isActive()) {
+                continue;
+            }
+
+            $items[] = [
+                'platform' => $socialLink->getPlatform(),
+                'url' => $socialLink->getUrl(),
+                'label' => $socialLink->getLabel(),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function openingHoursText(MerchantLocation $location): array
+    {
+        $labels = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miércoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sábado',
+            7 => 'domingo',
+        ];
+
+        $lines = [];
+        foreach ($labels as $day => $label) {
+            $openingHour = $location->getOpeningHourForDay($day);
+            if (!$openingHour instanceof LocationOpeningHour) {
+                continue;
+            }
+
+            if ($openingHour->isClosed() || $openingHour->getOpensAt() === null || $openingHour->getClosesAt() === null) {
+                $lines[] = sprintf('%s: cerrado', $label);
+                continue;
+            }
+
+            $lines[] = sprintf(
+                '%s: %s - %s',
+                $label,
+                $openingHour->getOpensAt()->format('H:i'),
+                $openingHour->getClosesAt()->format('H:i')
+            );
+        }
+
+        return $lines;
     }
 
     /**
