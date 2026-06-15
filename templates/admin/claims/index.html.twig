@@ -29,7 +29,7 @@
                                 <strong style="display:block; color:#111827;">{{ claim.locationName }}</strong>
                                 <span style="display:block; margin-top:0.2rem; color:#6b7280;">{{ claim.shortAddress ?: 'Sin direccion' }}</span>
                             </div>
-                            <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ claim.status }}</span>
+                            <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ claim.statusLabel(claim.status) }}</span>
                         </div>
                         <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
                             <span>{{ claim.sourceType }}</span>
@@ -65,7 +65,7 @@
                             <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
                                 {% for status in statuses %}
                                     <button type="submit" name="status" value="{{ status }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.1rem; border-radius:999px; padding:0.5rem 0.9rem; border:1px solid #d1d5db; background:{{ claim.status == status ? '#111827' : '#fff' }}; color:{{ claim.status == status ? '#fff' : '#374151' }}; font-weight:700;">
-                                        {{ status }}
+                                        {{ claim.statusLabel(status) }}
                                     </button>
                                 {% endfor %}
                             </div>

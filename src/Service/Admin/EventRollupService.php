@@ -32,13 +32,16 @@ final class EventRollupService
             ->getQuery()
             ->getArrayResult();
 
+        $this->entityManager->createQueryBuilder()
+            ->delete(MetricRollupDaily::class, 'rollup')
+            ->where('rollup.rollupDate = :day')
+            ->setParameter('day', $day)
+            ->getQuery()
+            ->execute();
+
         $written = 0;
         foreach ($rows as $row) {
-            $rollup = $this->entityManager->getRepository(MetricRollupDaily::class)->findOneBy([
-                'rollupDate' => $day,
-                'eventName' => $row['event_name'],
-                'sourceApp' => $row['source_app'],
-            ]) ?? (new MetricRollupDaily())
+            $rollup = (new MetricRollupDaily())
                 ->setRollupDate($day)
                 ->setEventName((string) $row['event_name'])
                 ->setSourceApp((string) $row['source_app']);

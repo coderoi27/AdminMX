@@ -48,6 +48,11 @@ class DemoSeedBatchItem
         return $this->id;
     }
 
+    public function getDemoSeedBatch(): DemoSeedBatch
+    {
+        return $this->demoSeedBatch;
+    }
+
     public function setDemoSeedBatch(DemoSeedBatch $demoSeedBatch): self
     {
         $this->demoSeedBatch = $demoSeedBatch;
@@ -55,11 +60,21 @@ class DemoSeedBatchItem
         return $this;
     }
 
+    public function getMerchantLocation(): MerchantLocation
+    {
+        return $this->merchantLocation;
+    }
+
     public function setMerchantLocation(MerchantLocation $merchantLocation): self
     {
         $this->merchantLocation = $merchantLocation;
 
         return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
     }
 
     public function setStatus(string $status): self
@@ -73,11 +88,21 @@ class DemoSeedBatchItem
         return $this;
     }
 
+    public function getGeneratedAt(): \DateTimeImmutable
+    {
+        return $this->generatedAt;
+    }
+
     public function setGeneratedAt(\DateTimeImmutable $generatedAt): self
     {
         $this->generatedAt = $generatedAt;
 
         return $this;
+    }
+
+    public function getExpiredAt(): ?\DateTimeImmutable
+    {
+        return $this->expiredAt;
     }
 
     public function setExpiredAt(?\DateTimeImmutable $expiredAt): self
@@ -87,11 +112,21 @@ class DemoSeedBatchItem
         return $this;
     }
 
+    public function getPurgedAt(): ?\DateTimeImmutable
+    {
+        return $this->purgedAt;
+    }
+
     public function setPurgedAt(?\DateTimeImmutable $purgedAt): self
     {
         $this->purgedAt = $purgedAt;
 
         return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
     }
 
     public function setNotes(?string $notes): self

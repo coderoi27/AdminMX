@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Curación Joyitas | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1120px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-bottom: 1rem; border-radius: 14px; padding: 0.9rem 1rem; background: {{ label == 'error' ? '#fff1f2' : '#eff6ff' }}; color: {{ label == 'error' ? '#be123c' : '#1d4ed8' }};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#f97316; font-weight:900;">Curación editorial</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Joyitas</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    Panel operativo para marcar candidatas, aprobar, rechazar o retirar el badge editorial sin salir del circuito canónico.
+                </p>
+            </div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                    Volver al dashboard
+                </a>
+                <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                    Ver locales
+                </a>
+            </div>
+        </div>
+
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.8rem; margin-top:1.5rem;">
+            {% for status in gem_statuses %}
+                <a href="{{ path('admin_joyitas_index', { gem_status: status }) }}" style="display:block; border:1px solid {{ filters.gem_status == status ? '#f97316' : '#e5e7eb' }}; border-radius:16px; padding:1rem; background:{{ filters.gem_status == status ? '#fff7ed' : '#fff' }}; text-decoration:none;">
+                    <span style="display:block; color:#6b7280; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;">{{ status }}</span>
+                    <strong style="display:block; margin-top:0.3rem; color:#111827; font-size:1.7rem;">{{ attribute(stats, status) }}</strong>
+                </a>
+            {% endfor %}
+        </section>
+
+        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem; background:#fff;">
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_joyitas_index') }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.gem_status == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.gem_status == '' ? '#111827' : '#fff' }}; color:{{ filters.gem_status == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todos operables</a>
+                {% for status in gem_statuses %}
+                    <a href="{{ path('admin_joyitas_index', { gem_status: status }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.gem_status == status ? '#111827' : '#e5e7eb' }}; background:{{ filters.gem_status == status ? '#111827' : '#fff' }}; color:{{ filters.gem_status == status ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                        {{ status }}
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section style="margin-top:1.5rem; display:grid; gap:0.9rem;">
+            {% if locations is empty %}
+                <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
+                    <strong style="display:block; color:#111827;">No hay locales para este filtro.</strong>
+                    <p style="margin:0.4rem 0 0; color:#6b7280;">Ajusta el filtro o crea locales canónicos para iniciar curación.</p>
+                </article>
+            {% else %}
+                {% for location in locations %}
+                    {% set address = location.primaryAddress %}
+                    <article style="display:grid; gap:0.9rem; border:1px solid #e5e7eb; border-radius:18px; padding:1rem 1.1rem; background:#fff;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                            <div>
+                                <strong style="display:block; color:#111827; font-size:1.08rem;">{{ location.name }}</strong>
+                                <span style="display:block; margin-top:0.2rem; color:#6b7280;">{{ location.merchant.name }}</span>
+                                <span style="display:block; margin-top:0.25rem; color:#64748b; font-size:0.92rem;">{{ address ? address.toShortAddress() : 'Sin dirección publicada' }}</span>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.sourceType }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #d1d5db; color:#374151; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.publicationState }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ location.gemStatus == 'approved' ? '#fff7ed' : (location.gemStatus == 'rejected' ? '#fef2f2' : '#f8fafc') }}; color:{{ location.gemStatus == 'approved' ? '#c2410c' : (location.gemStatus == 'rejected' ? '#b91c1c' : '#475569') }}; font-size:0.76rem; font-weight:900; text-transform:uppercase;">{{ location.gemStatus }}</span>
+                                {% if location.primaryCategory %}
+                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ location.primaryCategory.colorHex ?: '#FFF7ED' }}; color:{{ location.primaryCategory.colorHex ? '#ffffff' : '#9a3412' }}; font-size:0.76rem; font-weight:800;">
+                                        {{ location.primaryCategory.name }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <form method="post" action="{{ path('admin_joyitas_status', { id: location.id, gem_status: filters.gem_status ?: null }) }}" style="display:grid; gap:0.75rem;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('joyita_status_' ~ location.id) }}">
+                            <label style="display:grid; gap:0.35rem;">
+                                <span style="color:#374151; font-size:0.86rem; font-weight:800;">Tags editoriales</span>
+                                <input type="text" name="gem_reason_tags" value="{{ location.gemReasonTags ? location.gemReasonTags|join(', ') : '' }}" placeholder="oculto, tradicional, barrio" style="border:1px solid #d1d5db; border-radius:14px; padding:0.75rem 0.85rem;">
+                            </label>
+                            <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                                {% if location.gemStatus != 'pending' %}
+                                    <button type="submit" name="gem_status" value="pending" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#eff6ff; color:#1d4ed8; font-weight:800;">
+                                        Marcar candidata
+                                    </button>
+                                {% endif %}
+                                {% if location.gemStatus != 'approved' %}
+                                    <button type="submit" name="gem_status" value="approved" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#fff7ed; color:#c2410c; font-weight:900;">
+                                        Aprobar Joyita
+                                    </button>
+                                {% endif %}
+                                {% if location.gemStatus != 'rejected' %}
+                                    <button type="submit" name="gem_status" value="rejected" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#fef2f2; color:#b91c1c; font-weight:800;">
+                                        Rechazar
+                                    </button>
+                                {% endif %}
+                                {% if location.gemStatus != 'none' %}
+                                    <button type="submit" name="gem_status" value="none" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#f3f4f6; color:#374151; font-weight:800;">
+                                        Retirar badge
+                                    </button>
+                                {% endif %}
+                                <a href="{{ path('admin_locations_edit', { id: location.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:800;">
+                                    Editar ficha
+                                </a>
+                            </div>
+                        </form>
+                    </article>
+                {% endfor %}
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}

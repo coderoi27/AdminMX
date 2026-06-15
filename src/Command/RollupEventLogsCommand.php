@@ -29,9 +29,16 @@ final class RollupEventLogsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $dateOption = (string) $input->getOption('date');
-        $date = $dateOption === 'yesterday'
-            ? new \DateTimeImmutable('yesterday')
-            : new \DateTimeImmutable($dateOption);
+
+        try {
+            $date = $dateOption === 'yesterday'
+                ? new \DateTimeImmutable('yesterday')
+                : new \DateTimeImmutable($dateOption);
+        } catch (\Exception $exception) {
+            $io->error(sprintf('Invalid --date value "%s". Use Y-m-d, today or yesterday.', $dateOption));
+
+            return Command::INVALID;
+        }
 
         $written = $this->eventRollupService->rollupDay($date);
         $io->success(sprintf('Rollup %s computed with %d metric rows.', $date->format('Y-m-d'), $written));

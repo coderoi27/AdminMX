@@ -11,10 +11,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class LocationClaimRequest
 {
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_REVIEWING = 'reviewing';
+    public const STATUS_SUBMITTED = 'submitted';
+    public const STATUS_UNDER_REVIEW = 'under_review';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_REJECTED = 'rejected';
+    public const STATUS_CONVERTED = 'converted';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -49,7 +50,7 @@ class LocationClaimRequest
     private ?string $message = null;
 
     #[ORM\Column(length: 32)]
-    private string $status = self::STATUS_PENDING;
+    private string $status = self::STATUS_SUBMITTED;
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $prefillPayloadJson = null;
@@ -290,11 +291,24 @@ class LocationClaimRequest
     public static function statuses(): array
     {
         return [
-            self::STATUS_PENDING,
-            self::STATUS_REVIEWING,
+            self::STATUS_SUBMITTED,
+            self::STATUS_UNDER_REVIEW,
             self::STATUS_APPROVED,
             self::STATUS_REJECTED,
+            self::STATUS_CONVERTED,
         ];
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_SUBMITTED => 'submitted',
+            self::STATUS_UNDER_REVIEW => 'under_review',
+            self::STATUS_APPROVED => 'approved',
+            self::STATUS_REJECTED => 'rejected',
+            self::STATUS_CONVERTED => 'converted',
+            default => $status,
+        };
     }
 
     public function canTransitionTo(string $status): bool
@@ -312,10 +326,11 @@ class LocationClaimRequest
     public static function statusTransitions(): array
     {
         return [
-            self::STATUS_PENDING => [self::STATUS_REVIEWING, self::STATUS_REJECTED],
-            self::STATUS_REVIEWING => [self::STATUS_APPROVED, self::STATUS_REJECTED],
-            self::STATUS_APPROVED => [],
-            self::STATUS_REJECTED => [self::STATUS_REVIEWING],
+            self::STATUS_SUBMITTED => [self::STATUS_UNDER_REVIEW, self::STATUS_REJECTED],
+            self::STATUS_UNDER_REVIEW => [self::STATUS_APPROVED, self::STATUS_REJECTED],
+            self::STATUS_APPROVED => [self::STATUS_CONVERTED],
+            self::STATUS_REJECTED => [self::STATUS_UNDER_REVIEW],
+            self::STATUS_CONVERTED => [],
         ];
     }
 }

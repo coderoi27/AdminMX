@@ -43,8 +43,8 @@
                 <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.active_category_total }}</strong>
             </article>
             <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Claims pendientes</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.claims_pending_total }}</strong>
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Claims abiertos</p>
+                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.claims_open_total }}</strong>
             </article>
         </section>
 
@@ -97,14 +97,42 @@
                 </div>
             </article>
             <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
+                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Curación editorial</p>
+                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Joyitas</h2>
+                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
+                    Aprueba, rechaza o retira el badge editorial desde una cola separada del CRUD general.
+                </p>
+                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#eff6ff; color:#1d4ed8; font-size:0.78rem; font-weight:800;">
+                        {{ stats.joyitas_pending_total }} pendientes
+                    </span>
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff7ed; color:#c2410c; font-size:0.78rem; font-weight:800;">
+                        {{ stats.joyitas_approved_total }} aprobadas
+                    </span>
+                </div>
+                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
+                    <a href="{{ path('admin_joyitas_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#f97316; color:#fff; text-decoration:none; font-weight:700;">
+                        Abrir curación
+                    </a>
+                </div>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
                 <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Revisión operativa</p>
                 <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Claims y blacklist</h2>
                 <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Gestiona solicitudes de claim de locales y la blacklist de correos temporales desde el mismo admin.
+                    Gestiona solicitudes de claim, retiros operativos y blacklists desde el mismo admin.
                 </p>
+                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fef2f2; color:#b91c1c; font-size:0.78rem; font-weight:800;">
+                        {{ stats.takedowns_pending_total }} retiros abiertos
+                    </span>
+                </div>
                 <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
                     <a href="{{ path('admin_claims_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
                         Ver reclamos pendientes
+                    </a>
+                    <a href="{{ path('admin_takedowns_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#b91c1c; border:1px solid #fca5a5; text-decoration:none; font-weight:700;">
+                        Retiros operativos
                     </a>
                     <a href="{{ path('admin_blocked_email_domains_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
                         Blacklist de correos

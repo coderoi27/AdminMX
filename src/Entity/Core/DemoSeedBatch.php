@@ -319,6 +319,30 @@ class DemoSeedBatch
         return $this;
     }
 
+    public function getDisabledAt(): ?\DateTimeImmutable
+    {
+        return $this->disabledAt;
+    }
+
+    public function setDisabledAt(?\DateTimeImmutable $disabledAt): self
+    {
+        $this->disabledAt = $disabledAt;
+
+        return $this;
+    }
+
+    public function getPurgedAt(): ?\DateTimeImmutable
+    {
+        return $this->purgedAt;
+    }
+
+    public function setPurgedAt(?\DateTimeImmutable $purgedAt): self
+    {
+        $this->purgedAt = $purgedAt;
+
+        return $this;
+    }
+
     /**
      * @return list<string>
      */

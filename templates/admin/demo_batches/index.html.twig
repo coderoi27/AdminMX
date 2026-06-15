@@ -64,9 +64,13 @@
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
                 <div>
                     <h2 style="margin:0;">Control del plugin demo</h2>
-                    <p style="margin:0.35rem 0 0; color:#6b7280; line-height:1.6;">
-                        La activación del plugin no destruye datos. Solo habilita o bloquea la creación de nuevas tandas.
-                    </p>
+                <p style="margin:0.35rem 0 0; color:#6b7280; line-height:1.6;">
+                    La activación del plugin no destruye datos. Solo habilita o bloquea la creación de nuevas tandas.
+                </p>
+                <p style="margin:0.45rem 0 0; color:#6b7280; line-height:1.6;">
+                    Cron sugerido para expiración automática:
+                    <code>php bin/console app:demo-batches:lifecycle expire-due --env=prod --no-debug</code>
+                </p>
                 </div>
                 <form method="post" action="{{ path('admin_demo_batches_toggle_plugin') }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('toggle_demo_seed_plugin') }}">
@@ -125,12 +129,37 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <form method="post" action="{{ path('admin_demo_batches_seed', { id: batch.id }) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('seed_demo_batch_' ~ batch.id) }}">
-                                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; font-weight:700;">
-                                    Sembrar ahora
-                                </button>
-                            </form>
+                            <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                                {% if batch.status not in ['expired', 'purged', 'disabled'] %}
+                                    <form method="post" action="{{ path('admin_demo_batches_seed', { id: batch.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('seed_demo_batch_' ~ batch.id) }}">
+                                        <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; font-weight:700;">
+                                            Sembrar ahora
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                {% if batch.status not in ['expired', 'purged'] %}
+                                    <form method="post" action="{{ path('admin_demo_batches_expire', { id: batch.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('expire_demo_batch_' ~ batch.id) }}">
+                                        <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:1px solid #d1d5db; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#374151; font-weight:700;">
+                                            Expirar y ocultar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                {% if batch.status != 'purged' %}
+                                    <form method="post" action="{{ path('admin_demo_batches_purge', { id: batch.id }) }}" onsubmit="return confirm('Esta acción purga lógicamente la tanda y archiva sus locales demo. ¿Continuar?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('purge_demo_batch_' ~ batch.id) }}">
+                                        <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:1px solid #fecaca; border-radius:999px; padding:0.55rem 0.95rem; background:#fff1f2; color:#be123c; font-weight:700;">
+                                            Purgar lógico
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                {% if batch.status == 'purged' %}
+                                    <span style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#f3f4f6; color:#6b7280; font-weight:700;">
+                                        Tanda purgada
+                                    </span>
+                                {% endif %}
+                            </div>
                         </article>
                     {% endfor %}
                 </div>

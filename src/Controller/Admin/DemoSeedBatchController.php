@@ -8,6 +8,7 @@ use App\Entity\Core\DemoSeedBatch;
 use App\Entity\Core\LocationCategory;
 use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\SystemPlugin;
+use App\Service\Admin\DemoSeedBatchLifecycleService;
 use App\Service\Admin\DemoSeedLocationGenerator;
 use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
@@ -60,6 +61,66 @@ final class DemoSeedBatchController extends AbstractController
                 ? $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC'])
                 : [],
         ]);
+    }
+
+    #[Route('/{id}/expire', name: 'expire', methods: ['POST'])]
+    public function expire(
+        DemoSeedBatch $batch,
+        Request $request,
+        DemoSeedBatchLifecycleService $lifecycleService
+    ): RedirectResponse {
+        if (!$this->isCsrfTokenValid(sprintf('expire_demo_batch_%d', $batch->getId()), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'No se pudo validar la solicitud para expirar la tanda demo.');
+
+            return $this->redirectToRoute('admin_demo_batches_index');
+        }
+
+        try {
+            $stats = $lifecycleService->expireBatch($batch);
+            $this->addFlash(
+                'success',
+                sprintf(
+                    'Tanda "%s" expirada. Items: %d. Locales ocultos: %d.',
+                    $batch->getName(),
+                    $stats['items'],
+                    $stats['locations']
+                )
+            );
+        } catch (\Throwable $exception) {
+            $this->addFlash('error', $exception->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_demo_batches_index');
+    }
+
+    #[Route('/{id}/purge', name: 'purge', methods: ['POST'])]
+    public function purge(
+        DemoSeedBatch $batch,
+        Request $request,
+        DemoSeedBatchLifecycleService $lifecycleService
+    ): RedirectResponse {
+        if (!$this->isCsrfTokenValid(sprintf('purge_demo_batch_%d', $batch->getId()), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'No se pudo validar la solicitud para purgar la tanda demo.');
+
+            return $this->redirectToRoute('admin_demo_batches_index');
+        }
+
+        try {
+            $stats = $lifecycleService->purgeBatch($batch);
+            $this->addFlash(
+                'success',
+                sprintf(
+                    'Tanda "%s" purgada lógicamente. Items: %d. Locales archivados: %d.',
+                    $batch->getName(),
+                    $stats['items'],
+                    $stats['locations']
+                )
+            );
+        } catch (\Throwable $exception) {
+            $this->addFlash('error', $exception->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_demo_batches_index');
     }
 
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]

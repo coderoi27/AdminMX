@@ -112,6 +112,9 @@
                             <a href="{{ path('admin_locations_edit', { id: location.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff2e6; color:#c2410c; text-decoration:none; font-weight:700;">
                                 Editar
                             </a>
+                            <a href="{{ path('admin_takedowns_index', { location_id: location.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fef2f2; color:#b91c1c; text-decoration:none; font-weight:700;">
+                                Retiro operativo
+                            </a>
                             <form method="post" action="{{ path('admin_locations_archive', { id: location.id }) }}" onsubmit="return confirm('¿Archivar este local?');">
                                 <input type="hidden" name="_token" value="{{ csrf_token('archive_location_' ~ location.id) }}">
                                 <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#fef2f2; color:#b91c1c; font-weight:700;">

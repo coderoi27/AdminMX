@@ -9,6 +9,7 @@ use App\Entity\Core\LocationCategory;
 use App\Entity\Core\EventLog;
 use App\Entity\Core\LocationClaimRequest;
 use App\Entity\Core\LegalDocument;
+use App\Entity\Core\LocationTakedownRequest;
 use App\Entity\Core\MetricRollupDaily;
 use App\Entity\Core\PublicInvitation;
 use App\Entity\Core\SystemPlugin;
@@ -33,6 +34,7 @@ final class DashboardController extends AbstractController
         $allCategories = $categoryRepository->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']);
         $eventLogs = $eventLogRepository->findBy([], ['id' => 'DESC'], 800);
         $claims = $entityManager->getRepository(LocationClaimRequest::class)->findBy([], ['id' => 'DESC']);
+        $takedowns = $entityManager->getRepository(LocationTakedownRequest::class)->findBy([], ['id' => 'DESC']);
         $legalDocuments = $entityManager->getRepository(LegalDocument::class)->findBy([], ['sortOrder' => 'ASC']);
         $latestRollups = $entityManager->getRepository(MetricRollupDaily::class)->findBy([], ['rollupDate' => 'DESC', 'eventCount' => 'DESC'], 12);
 
@@ -109,14 +111,32 @@ final class DashboardController extends AbstractController
                 $allLocations,
                 static fn (MerchantLocation $location): bool => $location->getSourceType() === MerchantLocation::SOURCE_TYPE_FAKE_SEED
             )),
+            'joyitas_pending_total' => count(array_filter(
+                $allLocations,
+                static fn (MerchantLocation $location): bool => $location->getGemStatus() === MerchantLocation::GEM_STATUS_PENDING
+            )),
+            'joyitas_approved_total' => count(array_filter(
+                $allLocations,
+                static fn (MerchantLocation $location): bool => $location->getGemStatus() === MerchantLocation::GEM_STATUS_APPROVED
+            )),
             'category_total' => count($allCategories),
             'active_category_total' => count(array_filter(
                 $allCategories,
                 static fn (LocationCategory $category): bool => $category->isActive()
             )),
-            'claims_pending_total' => count(array_filter(
+            'claims_open_total' => count(array_filter(
                 $claims,
-                static fn (LocationClaimRequest $claim): bool => $claim->getStatus() === LocationClaimRequest::STATUS_PENDING
+                static fn (LocationClaimRequest $claim): bool => in_array($claim->getStatus(), [
+                    LocationClaimRequest::STATUS_SUBMITTED,
+                    LocationClaimRequest::STATUS_UNDER_REVIEW,
+                ], true)
+            )),
+            'takedowns_pending_total' => count(array_filter(
+                $takedowns,
+                static fn (LocationTakedownRequest $request): bool => in_array($request->getStatus(), [
+                    LocationTakedownRequest::STATUS_PENDING,
+                    LocationTakedownRequest::STATUS_REVIEWING,
+                ], true)
             )),
             'legal_document_total' => count($legalDocuments),
             'legal_document_published_total' => count(array_filter(

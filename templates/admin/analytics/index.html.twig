@@ -8,16 +8,53 @@
             <div>
                 <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Alpha Admin</p>
                 <h1 style="margin:0; font-size:2rem; color:#111827;">Analytics</h1>
-                <p style="margin:0.6rem 0 0; color:#4b5563;">Tendencias de los últimos rollups diarios persistidos.</p>
+                <p style="margin:0.6rem 0 0; color:#4b5563;">Rollups diarios persistidos, agrupados por intención de negocio para operación alpha.</p>
             </div>
             <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">Volver al dashboard</a>
         </div>
 
+        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.1rem; margin-top:1.5rem; background:#fff;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                <div>
+                    <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Operación</p>
+                    <h2 style="margin:0.35rem 0 0; color:#111827; font-size:1.12rem;">Ventana y frescura</h2>
+                    <p style="margin:0.4rem 0 0; color:#64748b; line-height:1.5;">
+                        Último rollup: <strong>{{ latest_rollup_date ? latest_rollup_date|date('Y-m-d') : 'sin datos' }}</strong>.
+                        Computado: <strong>{{ latest_computed_at ? latest_computed_at|date('Y-m-d H:i') : 'sin datos' }}</strong>.
+                    </p>
+                </div>
+                <code style="background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:0.55rem 0.7rem; color:#334155;">{{ cron_command }}</code>
+            </div>
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1rem;">
+                {% for days_option in available_days %}
+                    <a href="{{ path('admin_analytics_index', { days: days_option, source_app: filters.source_app ?: null }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.days == days_option ? '#111827' : '#e5e7eb' }}; background:{{ filters.days == days_option ? '#111827' : '#fff' }}; color:{{ filters.days == days_option ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                        {{ days_option }} días
+                    </a>
+                {% endfor %}
+                <a href="{{ path('admin_analytics_index', { days: filters.days }) }}" style="display:inline-flex; align-items:center; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_app == '' ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_app == '' ? '#111827' : '#fff' }}; color:{{ filters.source_app == '' ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">Todas las fuentes</a>
+                {% for source_app, total in source_totals %}
+                    <a href="{{ path('admin_analytics_index', { days: filters.days, source_app: source_app }) }}" style="display:inline-flex; align-items:center; gap:0.4rem; border-radius:999px; padding:0.46rem 0.82rem; border:1px solid {{ filters.source_app == source_app ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_app == source_app ? '#111827' : '#fff' }}; color:{{ filters.source_app == source_app ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;">
+                        {{ source_app }}
+                        <span style="opacity:0.75;">{{ total }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+
         <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1rem; margin-top:1.5rem;">
-            {% for event_name, total in totals|slice(0, 6) %}
+            {% for group_name, total in group_totals %}
+                <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem; background:#fff;">
+                    <span style="display:block; color:#6b7280; font-size:0.78rem; word-break:break-word;">{{ group_name }}</span>
+                    <strong style="display:block; margin-top:0.45rem; color:#111827; font-size:1.8rem;">{{ total }}</strong>
+                </article>
+            {% endfor %}
+        </section>
+
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1rem; margin-top:1rem;">
+            {% for event_name, total in totals|slice(0, 8) %}
                 <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem; background:#fff;">
                     <span style="display:block; color:#6b7280; font-size:0.78rem; word-break:break-word;">{{ event_name }}</span>
-                    <strong style="display:block; margin-top:0.45rem; color:#111827; font-size:1.8rem;">{{ total }}</strong>
+                    <strong style="display:block; margin-top:0.45rem; color:#111827; font-size:1.45rem;">{{ total }}</strong>
                 </article>
             {% else %}
                 <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem; background:#fff;">
@@ -33,7 +70,6 @@
                     <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Tendencia diaria</p>
                     <h2 style="margin:0.4rem 0 0; color:#111827; font-size:1.2rem;">Eventos principales</h2>
                 </div>
-                <code style="background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:0.55rem 0.7rem; color:#334155;">{{ cron_command }}</code>
             </div>
             <table style="width:100%; border-collapse:collapse; margin-top:1rem; min-width:760px;">
                 <thead>

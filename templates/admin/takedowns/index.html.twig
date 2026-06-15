@@ -1,0 +1,140 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Takedowns | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width:1120px; margin:0 auto; padding:3rem 1.5rem; font-family:system-ui, sans-serif;">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-bottom:1rem; border-radius:14px; padding:0.9rem 1rem; background:{{ label == 'error' ? '#fff1f2' : '#eff6ff' }}; color:{{ label == 'error' ? '#be123c' : '#1d4ed8' }};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#b91c1c; font-weight:900;">Moderación operativa</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Takedowns y retiros</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    Registro alpha para solicitudes de retiro, suspensión u ocultamiento de locales canónicos.
+                </p>
+            </div>
+            <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                Volver al dashboard
+            </a>
+        </div>
+
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.8rem; margin-top:1.5rem;">
+            {% for status in statuses %}
+                <a href="{{ path('admin_takedowns_index', { status: status }) }}" style="display:block; border:1px solid {{ filters.status == status ? '#b91c1c' : '#e5e7eb' }}; border-radius:16px; padding:1rem; background:{{ filters.status == status ? '#fef2f2' : '#fff' }}; text-decoration:none;">
+                    <span style="display:block; color:#6b7280; font-size:0.78rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;">{{ status }}</span>
+                    <strong style="display:block; margin-top:0.3rem; color:#111827; font-size:1.7rem;">{{ attribute(stats, status) }}</strong>
+                </a>
+            {% endfor %}
+        </section>
+
+        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem; background:#fff;">
+            <h2 style="margin:0; color:#111827; font-size:1.15rem;">Registrar retiro manual</h2>
+            <form method="post" style="display:grid; gap:0.9rem; margin-top:1rem;">
+                <input type="hidden" name="_token" value="{{ csrf_token('create_takedown') }}">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0.85rem;">
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:800; color:#374151;">Local publicado</span>
+                        <select name="location_id" style="border:1px solid #d1d5db; border-radius:14px; padding:0.8rem 0.85rem; background:#fff;">
+                            <option value="">Seleccionar local</option>
+                            {% for location in locations %}
+                                <option value="{{ location.id }}" {{ selected_location_id == location.id ? 'selected' }}>#{{ location.id }} · {{ location.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:800; color:#374151;">Categoría de razón</span>
+                        <select name="reason_category" style="border:1px solid #d1d5db; border-radius:14px; padding:0.8rem 0.85rem; background:#fff;">
+                            <option value="owner_request">Solicitud del dueño</option>
+                            <option value="duplicate">Duplicado</option>
+                            <option value="closed_business">Local cerrado</option>
+                            <option value="policy_risk">Riesgo/política</option>
+                            <option value="other">Otro</option>
+                        </select>
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:800; color:#374151;">Correo reportante</span>
+                        <input type="email" name="reported_by_email" placeholder="opcional" style="border:1px solid #d1d5db; border-radius:14px; padding:0.8rem 0.85rem;">
+                    </label>
+                </div>
+                <label style="display:grid; gap:0.4rem;">
+                    <span style="font-weight:800; color:#374151;">Razón operativa</span>
+                    <textarea name="reason_text" rows="3" placeholder="Motivo, evidencia o contexto mínimo para operar el retiro." style="border:1px solid #d1d5db; border-radius:14px; padding:0.8rem 0.85rem;"></textarea>
+                </label>
+                <button type="submit" style="justify-self:start; display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border:none; border-radius:999px; padding:0.6rem 1rem; background:#b91c1c; color:#fff; font-weight:900;">
+                    Crear solicitud
+                </button>
+            </form>
+        </section>
+
+        <section style="margin-top:1.5rem; display:grid; gap:0.9rem;">
+            {% if requests is empty %}
+                <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
+                    <strong style="display:block; color:#111827;">No hay takedowns para este filtro.</strong>
+                    <p style="margin:0.4rem 0 0; color:#6b7280;">Registra una solicitud manual cuando exista señal externa o criterio operativo.</p>
+                </article>
+            {% else %}
+                {% for request in requests %}
+                    <article style="display:grid; gap:0.9rem; border:1px solid #e5e7eb; border-radius:18px; padding:1rem 1.1rem; background:#fff;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                            <div>
+                                <strong style="display:block; color:#111827; font-size:1.05rem;">#{{ request.id }} · {{ request.location.name }}</strong>
+                                <span style="display:block; margin-top:0.25rem; color:#64748b;">{{ request.reasonCategory }} · {{ request.createdAt|date('Y-m-d H:i') }}</span>
+                                <p style="margin:0.45rem 0 0; color:#374151; line-height:1.5;">{{ request.reasonText }}</p>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#f8fafc; color:#475569; font-size:0.76rem; font-weight:900; text-transform:uppercase;">{{ request.status }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #e5e7eb; color:#374151; font-size:0.76rem; font-weight:800;">{{ request.location.publicationState }}</span>
+                                <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #e5e7eb; color:#374151; font-size:0.76rem; font-weight:800;">{{ request.location.status }}</span>
+                            </div>
+                        </div>
+
+                        {% if request.status != 'resolved' %}
+                            <form method="post" action="{{ path('admin_takedowns_resolve', { id: request.id, status: filters.status ?: null }) }}" style="display:grid; gap:0.75rem;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('resolve_takedown_' ~ request.id) }}">
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:0.75rem;">
+                                    <label style="display:grid; gap:0.35rem;">
+                                        <span style="font-size:0.86rem; color:#374151; font-weight:800;">Nuevo estado</span>
+                                        <select name="status" style="border:1px solid #d1d5db; border-radius:14px; padding:0.75rem 0.85rem; background:#fff;">
+                                            {% for status in statuses %}
+                                                <option value="{{ status }}" {{ request.status == status ? 'selected' }}>{{ status }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
+                                    <label style="display:grid; gap:0.35rem;">
+                                        <span style="font-size:0.86rem; color:#374151; font-weight:800;">Acción al resolver</span>
+                                        <select name="resolution_action" style="border:1px solid #d1d5db; border-radius:14px; padding:0.75rem 0.85rem; background:#fff;">
+                                            {% for action in resolution_actions %}
+                                                <option value="{{ action }}" {{ request.resolutionAction == action ? 'selected' }}>{{ action }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
+                                </div>
+                                <label style="display:grid; gap:0.35rem;">
+                                    <span style="font-size:0.86rem; color:#374151; font-weight:800;">Notas de resolución</span>
+                                    <textarea name="resolution_notes" rows="2" style="border:1px solid #d1d5db; border-radius:14px; padding:0.75rem 0.85rem;">{{ request.resolutionNotes }}</textarea>
+                                </label>
+                                <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
+                                    <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border:none; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; font-weight:900;">
+                                        Guardar resolución
+                                    </button>
+                                    <a href="{{ path('admin_locations_edit', { id: request.location.id }) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:800;">
+                                        Editar local
+                                    </a>
+                                </div>
+                            </form>
+                        {% else %}
+                            <p style="margin:0; color:#64748b;">Resuelto con acción <strong>{{ request.resolutionAction }}</strong>{{ request.resolvedAt ? ' el ' ~ request.resolvedAt|date('Y-m-d H:i') : '' }}.</p>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}

@@ -90,4 +90,9 @@ class MetricRollupDaily
 
         return $this;
     }
+
+    public function getComputedAt(): ?\DateTimeImmutable
+    {
+        return $this->computedAt;
+    }
 }
