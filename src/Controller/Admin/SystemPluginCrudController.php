@@ -34,11 +34,21 @@ final class SystemPluginCrudController extends AbstractController
             $entityManager->persist($plugin);
         }
 
-        $plugin->setIsEnabled(!$plugin->isEnabled());
+        $enabled = !$plugin->isEnabled();
+        $plugin
+            ->setIsEnabled($enabled)
+            ->setStatus($enabled ? SystemPlugin::STATUS_ACTIVE : SystemPlugin::STATUS_DISABLED);
         $entityManager->flush();
 
         $this->addFlash('success', sprintf('Plugin %s %s correctamente.', $plugin->getName(), $plugin->isEnabled() ? 'activado' : 'desactivado'));
 
-        return $this->redirectToRoute('admin_dashboard');
+        return $this->redirectToRoute($this->redirectRoute($request));
+    }
+
+    private function redirectRoute(Request $request): string
+    {
+        $route = $request->request->getString('_redirect_route', 'admin_dashboard');
+
+        return in_array($route, ['admin_dashboard', 'admin_system_settings_index'], true) ? $route : 'admin_dashboard';
     }
 }

@@ -15,6 +15,8 @@ class SystemPlugin
 {
     public const DEMO_SEED_LOCATIONS = 'demo_seed_locations';
     public const GOOGLE_PLACES_PROXY = 'google_places_proxy';
+    public const MAP_SETTINGS = 'map_settings';
+    public const PUBLIC_BRANDING = 'public_branding';
 
     public const STATUS_ACTIVE = 'active';
     public const STATUS_DISABLED = 'disabled';

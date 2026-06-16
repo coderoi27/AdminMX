@@ -15,17 +15,19 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/system-settings', name: 'admin_system_settings_')]
 final class SystemSettingsController extends AbstractController
 {
-    private const MAP_CONFIG_KEY = 'map_settings';
-
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(EntityManagerInterface $entityManager): Response
     {
-        $mapPlugin = $this->findOrCreatePlugin($entityManager, self::MAP_CONFIG_KEY, 'Configuraciones del mapa');
-        $placesPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::GOOGLE_PLACES_PROXY, 'Google Places Proxy');
+        $mapPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::MAP_SETTINGS, 'Configuraciones del mapa');
+        $placesPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::GOOGLE_PLACES_PROXY, 'Google Places Proxy', false);
+        $brandingPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::PUBLIC_BRANDING, 'Branding público');
 
         return $this->render('admin/system_settings/index.html.twig', [
             'map_settings' => $this->mapSettings($mapPlugin),
             'places_settings' => $this->placesSettings($placesPlugin),
+            'places_plugin' => $placesPlugin,
+            'places_checklist' => $this->placesOperationalChecklist($placesPlugin),
+            'public_branding' => $this->publicBrandingSettings($brandingPlugin),
         ]);
     }
 
@@ -38,7 +40,7 @@ final class SystemSettingsController extends AbstractController
             return $this->redirectToRoute('admin_system_settings_index');
         }
 
-        $plugin = $this->findOrCreatePlugin($entityManager, self::MAP_CONFIG_KEY, 'Configuraciones del mapa');
+        $plugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::MAP_SETTINGS, 'Configuraciones del mapa');
         $settings = $this->mapSettings($plugin);
         $settings['default_zoom'] = $this->boundedInt($request->request->getInt('default_zoom', 18), 10, 20);
         $settings['focused_zoom'] = $this->boundedInt($request->request->getInt('focused_zoom', 18), 10, 20);
@@ -66,7 +68,7 @@ final class SystemSettingsController extends AbstractController
             return $this->redirectToRoute('admin_system_settings_index');
         }
 
-        $plugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::GOOGLE_PLACES_PROXY, 'Google Places Proxy');
+        $plugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::GOOGLE_PLACES_PROXY, 'Google Places Proxy', false);
         $settings = $this->placesSettings($plugin);
         $settings['nearby_radius_meters'] = $this->boundedInt($request->request->getInt('nearby_radius_meters', 1000), 100, 1000);
         $settings['nearby_max_results'] = $this->boundedInt($request->request->getInt('nearby_max_results', 20), 1, 20);
@@ -90,7 +92,39 @@ final class SystemSettingsController extends AbstractController
         return $this->redirectToRoute('admin_system_settings_index');
     }
 
-    private function findOrCreatePlugin(EntityManagerInterface $entityManager, string $pluginKey, string $name): SystemPlugin
+    #[Route('/public-branding', name: 'public_branding', methods: ['POST'])]
+    public function updatePublicBranding(Request $request, EntityManagerInterface $entityManager): RedirectResponse
+    {
+        if (!$this->isCsrfTokenValid('update_public_branding', (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'No se pudo validar la solicitud de branding público.');
+
+            return $this->redirectToRoute('admin_system_settings_index');
+        }
+
+        $plugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::PUBLIC_BRANDING, 'Branding público');
+        $settings = $this->publicBrandingSettings($plugin);
+        $settings['app_name'] = $this->boundedString($request->request->getString('app_name', 'Mi Monchis'), 80);
+        $settings['logo_horizontal_url'] = $this->nullableUrl($request->request->getString('logo_horizontal_url', ''));
+        $settings['logo_square_url'] = $this->nullableUrl($request->request->getString('logo_square_url', ''));
+        $settings['favicon_url'] = $this->nullableUrl($request->request->getString('favicon_url', ''));
+        $settings['theme_color'] = $this->themeColor($request->request->getString('theme_color', '#ff7a00'));
+        $settings['default_meta_title'] = $this->boundedString($request->request->getString('default_meta_title', 'Mi Monchis MX'), 120);
+        $settings['default_meta_description'] = $this->boundedString($request->request->getString('default_meta_description', 'Explora locales cerca de ti con Mi Monchis MX.'), 220);
+
+        $plugin
+            ->setIsEnabled(true)
+            ->setStatus(SystemPlugin::STATUS_ACTIVE)
+            ->setConfigJson($settings);
+
+        $entityManager->persist($plugin);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Branding público actualizado.');
+
+        return $this->redirectToRoute('admin_system_settings_index');
+    }
+
+    private function findOrCreatePlugin(EntityManagerInterface $entityManager, string $pluginKey, string $name, bool $defaultEnabled = true): SystemPlugin
     {
         $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => $pluginKey]);
         if ($plugin instanceof SystemPlugin) {
@@ -100,8 +134,8 @@ final class SystemSettingsController extends AbstractController
         return (new SystemPlugin())
             ->setPluginKey($pluginKey)
             ->setName($name)
-            ->setIsEnabled(true)
-            ->setStatus(SystemPlugin::STATUS_ACTIVE)
+            ->setIsEnabled($defaultEnabled)
+            ->setStatus($defaultEnabled ? SystemPlugin::STATUS_ACTIVE : SystemPlugin::STATUS_DISABLED)
             ->setConfigJson([]);
     }
 
@@ -137,6 +171,55 @@ final class SystemSettingsController extends AbstractController
         ], $plugin->getConfigJson() ?? []);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function publicBrandingSettings(SystemPlugin $plugin): array
+    {
+        return array_replace([
+            'app_name' => 'Mi Monchis',
+            'logo_horizontal_url' => '/images/branding/logo-simple-horizontal.png',
+            'logo_square_url' => '/images/branding/logo-simple-square.png',
+            'favicon_url' => '/favicon.ico',
+            'theme_color' => '#ff7a00',
+            'default_meta_title' => 'Mi Monchis MX',
+            'default_meta_description' => 'Explora locales cerca de ti con Mi Monchis MX.',
+        ], $plugin->getConfigJson() ?? []);
+    }
+
+    /**
+     * @return array<int, array{label: string, enabled: bool, on: string, off: string}>
+     */
+    private function placesOperationalChecklist(SystemPlugin $plugin): array
+    {
+        return [
+            [
+                'label' => 'Switch público del proxy',
+                'enabled' => $plugin->isEnabled(),
+                'on' => 'Core expone meta.plugins.google_places_proxy = true.',
+                'off' => 'Core expone meta.plugins.google_places_proxy = false.',
+            ],
+            [
+                'label' => 'Settings operativos Places',
+                'enabled' => $plugin->isEnabled(),
+                'on' => 'Public recibe settings.google_places_proxy con radios, TTLs y FieldMask efectivo.',
+                'off' => 'Public recibe operational_mode = disabled y no debe ejecutar búsquedas Places.',
+            ],
+            [
+                'label' => 'Reglas y blacklist',
+                'enabled' => $plugin->isEnabled(),
+                'on' => 'Core expone blacklist y reglas activas para clasificación/exclusión.',
+                'off' => 'Core devuelve listas vacías para reglas/blacklist del plugin.',
+            ],
+            [
+                'label' => 'Categorías canónicas',
+                'enabled' => true,
+                'on' => 'El catálogo de categorías sigue expuesto aunque Places esté apagado.',
+                'off' => 'El catálogo no depende del plugin y permanece disponible.',
+            ],
+        ];
+    }
+
     private function boundedInt(int $value, int $min, int $max): int
     {
         return max($min, min($max, $value));
@@ -145,5 +228,24 @@ final class SystemSettingsController extends AbstractController
     private function textSearchMode(string $mode): string
     {
         return in_array($mode, ['off', 'category_only', 'always'], true) ? $mode : 'category_only';
+    }
+
+    private function boundedString(string $value, int $maxLength): string
+    {
+        return mb_substr(trim($value), 0, $maxLength);
+    }
+
+    private function nullableUrl(string $value): ?string
+    {
+        $value = trim($value);
+
+        return $value !== '' ? mb_substr($value, 0, 1024) : null;
+    }
+
+    private function themeColor(string $value): string
+    {
+        $value = trim($value);
+
+        return preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1 ? strtolower($value) : '#ff7a00';
     }
 }

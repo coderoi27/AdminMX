@@ -17,6 +17,43 @@
             </a>
         </div>
 
+        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem; background:#fff;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                <div>
+                    <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Checklist duro</p>
+                    <h2 style="margin:0.4rem 0 0; font-size:1.2rem; color:#111827;">Google Places Proxy</h2>
+                    <p style="margin:0.45rem 0 0; color:#4b5563; line-height:1.6;">
+                        Estado verificable del plugin. Al apagarlo, Public debe conservar el catálogo canónico, pero no ejecutar búsqueda ni consumir reglas operativas de Places.
+                    </p>
+                </div>
+                <form action="{{ path('admin_system_plugins_toggle', { pluginKey: 'google_places_proxy' }) }}" method="POST" style="margin:0;">
+                    <input type="hidden" name="_token" value="{{ csrf_token('toggle_plugin_google_places_proxy') }}">
+                    <input type="hidden" name="_redirect_route" value="admin_system_settings_index">
+                    <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.35rem; border-radius:999px; padding:0.58rem 1rem; background:{{ places_plugin.isEnabled ? '#ef4444' : '#22c55e' }}; color:#fff; border:none; cursor:pointer; font-weight:800;">
+                        {{ places_plugin.isEnabled ? 'Desactivar proxy Places' : 'Activar proxy Places' }}
+                    </button>
+                </form>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0.8rem; margin-top:1rem;">
+                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem; background:{{ places_plugin.isEnabled ? '#f0fdf4' : '#f8fafc' }};">
+                    <span style="display:block; color:#64748b; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:800;">Estado runtime</span>
+                    <strong style="display:block; margin-top:0.3rem; color:{{ places_plugin.isEnabled ? '#166534' : '#475569' }}; font-size:1.1rem;">{{ places_plugin.isEnabled ? 'Encendido' : 'Apagado' }}</strong>
+                    <small style="display:block; margin-top:0.35rem; color:#64748b;">Status interno: {{ places_plugin.status }}</small>
+                </article>
+                {% for item in places_checklist %}
+                    <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem; background:#fff;">
+                        <span style="display:inline-flex; border-radius:999px; padding:0.24rem 0.55rem; background:{{ item.enabled ? '#dcfce7' : '#f3f4f6' }}; color:{{ item.enabled ? '#166534' : '#475569' }}; font-size:0.72rem; font-weight:900; text-transform:uppercase;">
+                            {{ item.enabled ? 'Activo' : 'Inactivo' }}
+                        </span>
+                        <strong style="display:block; margin-top:0.55rem; color:#111827;">{{ item.label }}</strong>
+                        <p style="margin:0.35rem 0 0; color:#4b5563; line-height:1.5; font-size:0.9rem;">
+                            {{ places_plugin.isEnabled ? item.on : item.off }}
+                        </p>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+
         <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1.2rem; margin-top:1.5rem;">
             <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
                 <h2 style="margin:0; font-size:1.15rem; color:#111827;">Mapa público</h2>
@@ -108,6 +145,47 @@
                     </fieldset>
                     <button type="submit" style="justify-self:start; display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border:none; border-radius:999px; padding:0.65rem 1rem; background:#111827; color:#fff; font-weight:700; cursor:pointer;">
                         Guardar Places
+                    </button>
+                </form>
+            </article>
+
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
+                <h2 style="margin:0; font-size:1.15rem; color:#111827;">Branding público</h2>
+                <p style="margin:0.55rem 0 1rem; color:#4b5563; line-height:1.6;">
+                    Identidad consumible por Public. Este bloque no pertenece al plugin de Places ni a configuración de mapa.
+                </p>
+                <form action="{{ path('admin_system_settings_public_branding') }}" method="POST" style="display:grid; gap:0.9rem;">
+                    <input type="hidden" name="_token" value="{{ csrf_token('update_public_branding') }}">
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Nombre de app</span>
+                        <input type="text" name="app_name" maxlength="80" value="{{ public_branding.app_name }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Logo horizontal URL</span>
+                        <input type="text" name="logo_horizontal_url" value="{{ public_branding.logo_horizontal_url }}" placeholder="/images/branding/logo-horizontal.png" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Logo cuadrado URL</span>
+                        <input type="text" name="logo_square_url" value="{{ public_branding.logo_square_url }}" placeholder="/images/branding/logo-square.png" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Favicon URL</span>
+                        <input type="text" name="favicon_url" value="{{ public_branding.favicon_url }}" placeholder="/favicon.ico" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Theme color</span>
+                        <input type="text" name="theme_color" maxlength="7" value="{{ public_branding.theme_color }}" placeholder="#ff7a00" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Meta title default</span>
+                        <input type="text" name="default_meta_title" maxlength="120" value="{{ public_branding.default_meta_title }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">
+                    </label>
+                    <label style="display:grid; gap:0.4rem;">
+                        <span style="font-weight:700; color:#111827;">Meta description default</span>
+                        <textarea name="default_meta_description" rows="3" maxlength="220" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem 0.8rem;">{{ public_branding.default_meta_description }}</textarea>
+                    </label>
+                    <button type="submit" style="justify-self:start; display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border:none; border-radius:999px; padding:0.65rem 1rem; background:#111827; color:#fff; font-weight:700; cursor:pointer;">
+                        Guardar branding
                     </button>
                 </form>
             </article>

@@ -40,6 +40,7 @@ final class LocationFeedController extends AbstractController
             ->getResult();
         $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
         $googlePlacesPlugin = $this->findGooglePlacesPlugin($entityManager);
+        $googlePlacesEnabled = $googlePlacesPlugin !== null && $googlePlacesPlugin->isEnabled();
         $blacklistedPlaces = $this->findGooglePlaceBlacklist($entityManager);
         $placeCategoryRules = $this->findPlaceCategoryRules($entityManager);
         $claimedGooglePlaceIds = $this->findClaimedGooglePlaceIds($entityManager);
@@ -120,23 +121,24 @@ final class LocationFeedController extends AbstractController
                     'favorites_policy' => 'Solo locales canónicos Mi Monchis con location_id estable pueden guardarse como favoritos. Google Places se puede reclamar antes de volverse favorito.',
                 ],
                 'plugins' => [
-                    'google_places_proxy' => $googlePlacesPlugin !== null && $googlePlacesPlugin->isEnabled(),
+                    'google_places_proxy' => $googlePlacesEnabled,
                 ],
                 'settings' => [
                     'map' => $this->mapSettings($entityManager),
                     'google_places_proxy' => $this->googlePlacesSettings($googlePlacesPlugin),
+                    'public_branding' => $this->publicBrandingSettings($entityManager),
                 ],
                 'google_places_blacklist' => array_map(
                     static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
                     array_values(array_filter(
-                        $blacklistedPlaces,
+                        $googlePlacesEnabled ? $blacklistedPlaces : [],
                         static fn (GooglePlaceBlacklist $item): bool => $item->getMatchType() === GooglePlaceBlacklist::MATCH_TYPE_PLACE_ID
                     ))
                 ),
                 'google_places_blacklist_name_keywords' => array_map(
                     static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
                     array_values(array_filter(
-                        $blacklistedPlaces,
+                        $googlePlacesEnabled ? $blacklistedPlaces : [],
                         static fn (GooglePlaceBlacklist $item): bool => $item->getMatchType() === GooglePlaceBlacklist::MATCH_TYPE_NAME_KEYWORD
                     ))
                 ),
@@ -146,7 +148,7 @@ final class LocationFeedController extends AbstractController
                         'match_value' => $item->getExternalSourceKey(),
                         'reason' => $item->getReason(),
                     ],
-                    $blacklistedPlaces
+                    $googlePlacesEnabled ? $blacklistedPlaces : []
                 ),
                 'category_catalog' => array_map(
                     static fn (LocationCategory $category): array => [
@@ -173,9 +175,9 @@ final class LocationFeedController extends AbstractController
                         'match_value' => $rule->getMatchValue(),
                         'priority' => $rule->getPriority(),
                     ],
-                    $placeCategoryRules
+                    $googlePlacesEnabled ? $placeCategoryRules : []
                 ),
-                'claimed_google_place_ids' => $claimedGooglePlaceIds,
+                'claimed_google_place_ids' => $googlePlacesEnabled ? $claimedGooglePlaceIds : [],
             ],
             'errors' => [],
         ]);
@@ -198,7 +200,7 @@ final class LocationFeedController extends AbstractController
     private function mapSettings(EntityManagerInterface $entityManager): array
     {
         try {
-            $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => 'map_settings']);
+            $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::MAP_SETTINGS]);
 
             return array_replace([
                 'default_zoom' => 18,
@@ -219,7 +221,16 @@ final class LocationFeedController extends AbstractController
      */
     private function googlePlacesSettings(?SystemPlugin $plugin): array
     {
+        $enabled = $plugin instanceof SystemPlugin && $plugin->isEnabled();
+
         return array_replace([
+            'enabled' => $enabled,
+            'operational_mode' => $enabled ? 'enabled' : 'disabled',
+            'disabled_effects' => [
+                'Public must not call Google Places search endpoints.',
+                'Core returns empty google_places_blacklist and place_category_rules arrays.',
+                'Canonical category_catalog remains available.',
+            ],
             'nearby_radius_meters' => 1000,
             'nearby_max_results' => 20,
             'text_search_page_size' => 10,
@@ -232,6 +243,30 @@ final class LocationFeedController extends AbstractController
             'include_opening_hours' => true,
             'include_service_attributes' => true,
         ], $plugin instanceof SystemPlugin ? ($plugin->getConfigJson() ?? []) : []);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function publicBrandingSettings(EntityManagerInterface $entityManager): array
+    {
+        $defaults = [
+            'app_name' => 'Mi Monchis',
+            'logo_horizontal_url' => '/images/branding/logo-simple-horizontal.png',
+            'logo_square_url' => '/images/branding/logo-simple-square.png',
+            'favicon_url' => '/favicon.ico',
+            'theme_color' => '#ff7a00',
+            'default_meta_title' => 'Mi Monchis MX',
+            'default_meta_description' => 'Explora locales cerca de ti con Mi Monchis MX.',
+        ];
+
+        try {
+            $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::PUBLIC_BRANDING]);
+
+            return array_replace($defaults, $plugin instanceof SystemPlugin ? ($plugin->getConfigJson() ?? []) : []);
+        } catch (DbalException|\Throwable) {
+            return $defaults;
+        }
     }
 
     /**
