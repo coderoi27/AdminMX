@@ -1,362 +1,120 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Admin Mi Monchis MX{% endblock %}
+{% block header_title %}Dashboard Operativo{% endblock %}
 
 {% block body %}
-    <main style="max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
-        <p style="margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280;">
-            Alpha Admin
-        </p>
-        <h1 style="margin: 0 0 1rem; font-size: 2rem;">Base operativa inicial</h1>
-        <p style="margin: 0 0 2rem; color: #4b5563; line-height: 1.6;">
-            Este proyecto ya aloja el runtime inicial del contexto <strong>core/domain</strong> y de la consola administrativa.
-        </p>
+    <div class="max-w-6xl mx-auto space-y-8">
+        
+        <!-- Header Section -->
+        <div class="space-y-2">
+            <p class="text-sm font-bold tracking-widest text-gray-500 uppercase">Alpha Admin</p>
+            <h1 class="text-4xl font-extrabold tracking-tight text-gray-900">Base operativa inicial</h1>
+            <p class="text-lg text-gray-600 max-w-3xl">
+                Este proyecto aloja el runtime inicial del contexto <strong class="font-semibold text-gray-900">core/domain</strong> y de la consola administrativa.
+            </p>
+        </div>
 
-        <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem;">
-            <h2 style="margin-top: 0;">Primer corte montado</h2>
-            <ul style="line-height: 1.8; color: #374151;">
+        <!-- Highlight Card -->
+        <section class="glass-card p-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Primer corte montado</h2>
+            <ul class="space-y-2 text-gray-700 list-disc list-inside">
                 <li>Estructura inicial de entidades Doctrine para core y admin</li>
-                <li>Feed API base en <code>/api/v1/locations/feed</code></li>
+                <li>Feed API base en <code class="bg-black/5 px-1.5 py-0.5 rounded text-sm">/api/v1/locations/feed</code></li>
                 <li>Punto de partida para migraciones, leads, invitaciones y narrativa</li>
             </ul>
         </section>
 
-        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-top:1.5rem;">
-            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Correos capturados</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.public_invitation_total }}</strong>
+        <!-- Stats Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <article class="glass-card p-5 flex flex-col justify-between">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Correos capturados</p>
+                <strong class="text-4xl font-black text-gray-900">{{ stats.public_invitation_total }}</strong>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Invitaciones enviadas</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.public_invitation_sent }}</strong>
+            <article class="glass-card p-5 flex flex-col justify-between">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Invitaciones enviadas</p>
+                <strong class="text-4xl font-black text-gray-900">{{ stats.public_invitation_sent }}</strong>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Accesos usados</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.public_invitation_used }}</strong>
+            <article class="glass-card p-5 flex flex-col justify-between">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Accesos usados</p>
+                <strong class="text-4xl font-black text-gray-900">{{ stats.public_invitation_used }}</strong>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Locales canónicos</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.location_total }}</strong>
+            <article class="glass-card p-5 flex flex-col justify-between">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Locales canónicos</p>
+                <strong class="text-4xl font-black text-gray-900">{{ stats.location_total }}</strong>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Categorías activas</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.active_category_total }}</strong>
+            <article class="glass-card p-5 flex flex-col justify-between">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categorías activas</p>
+                <strong class="text-4xl font-black text-gray-900">{{ stats.active_category_total }}</strong>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem 1.1rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Claims abiertos</p>
-                <strong style="display:block; margin-top:0.35rem; font-size:2rem; color:#111827;">{{ stats.claims_open_total }}</strong>
+            <article class="glass-card p-5 flex flex-col justify-between">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Claims abiertos</p>
+                <strong class="text-4xl font-black text-gray-900">{{ stats.claims_open_total }}</strong>
             </article>
         </section>
 
-        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; margin-top:1.5rem;">
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Configuración global</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Sistema, mapa y plugins</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Ajusta comportamiento del mapa público y parámetros operativos de Google Places API.
-                </p>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_system_settings_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+        <!-- Action Cards Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <article class="glass-card p-6 flex flex-col h-full">
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Configuración global</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">Sistema, mapa y plugins</h2>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Ajusta comportamiento del mapa público y parámetros operativos de Google Places API.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3 mt-auto">
+                    <a href="{{ path('admin_system_settings_index') }}" class="glass-btn-primary">
                         Abrir configuraciones
+                    </a>
+                    <a href="{{ path('admin_public_branding_index') }}" class="glass-btn">
+                        Branding y SEO
                     </a>
                 </div>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Acceso visible</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Operar locales canónicos</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Alta, edición y archivado de locales reales, demo o Google desde el mismo circuito canónico.
-                </p>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_locations_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+
+            <article class="glass-card p-6 flex flex-col h-full">
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Acceso visible</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">Operar locales canónicos</h2>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Alta, edición y archivado de locales reales, demo o Google desde el mismo circuito canónico.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3 mt-auto">
+                    <a href="{{ path('admin_locations_new') }}" class="glass-btn-primary">
                         Crear local
                     </a>
-                    <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                    <a href="{{ path('admin_locations_index') }}" class="glass-btn">
                         Abrir listado
                     </a>
                 </div>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Fuente de verdad visual</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Catálogo de categorías</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Administra categorías reales para chips, cards, pines y tandas demo sin depender de defaults en el código.
-                </p>
-                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff7ed; color:#9a3412; font-size:0.78rem; font-weight:800;">
-                        {{ stats.category_total }} categorías totales
-                    </span>
+
+            <article class="glass-card p-6 flex flex-col h-full">
+                <div class="flex-1">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Fuente de verdad visual</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">Catálogo de categorías</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        Administra categorías reales para chips, cards, pines y tandas demo sin depender de defaults.
+                    </p>
+                    <div class="mb-6">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-orange-100/80 text-orange-800 text-xs font-bold border border-orange-200 backdrop-blur-sm">
+                            {{ stats.category_total }} categorías totales
+                        </span>
+                    </div>
                 </div>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_categories_new') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
+                <div class="flex flex-wrap gap-3 mt-auto">
+                    <a href="{{ path('admin_categories_new') }}" class="glass-btn-primary">
                         Crear categoría
                     </a>
-                    <a href="{{ path('admin_categories_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
+                    <a href="{{ path('admin_categories_index') }}" class="glass-btn">
                         Abrir catálogo
                     </a>
                 </div>
             </article>
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Curación editorial</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Joyitas</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Aprueba, rechaza o retira el badge editorial desde una cola separada del CRUD general.
-                </p>
-                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#eff6ff; color:#1d4ed8; font-size:0.78rem; font-weight:800;">
-                        {{ stats.joyitas_pending_total }} pendientes
-                    </span>
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff7ed; color:#c2410c; font-size:0.78rem; font-weight:800;">
-                        {{ stats.joyitas_approved_total }} aprobadas
-                    </span>
-                </div>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_joyitas_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#f97316; color:#fff; text-decoration:none; font-weight:700;">
-                        Abrir curación
-                    </a>
-                </div>
-            </article>
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Revisión operativa</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Claims y blacklist</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Gestiona solicitudes de claim, retiros operativos y blacklists desde el mismo admin.
-                </p>
-                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fef2f2; color:#b91c1c; font-size:0.78rem; font-weight:800;">
-                        {{ stats.takedowns_pending_total }} retiros abiertos
-                    </span>
-                </div>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_claims_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
-                        Ver reclamos pendientes
-                    </a>
-                    <a href="{{ path('admin_takedowns_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#b91c1c; border:1px solid #fca5a5; text-decoration:none; font-weight:700;">
-                        Retiros operativos
-                    </a>
-                    <a href="{{ path('admin_blocked_email_domains_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
-                        Blacklist de correos
-                    </a>
-                    <a href="{{ path('admin_blacklist_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#b91c1c; border:1px solid #fca5a5; text-decoration:none; font-weight:700;">
-                        Blacklist Google Places
-                    </a>
-                </div>
-            </article>
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Base para plugin</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Tandas demo</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Preparadas para crear lotes demo con activación/desactivación del plugin y persistencia en locales canónicos.
-                </p>
-                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:{{ stats.demo_plugin and stats.demo_plugin.isEnabled ? '#dcfce7' : '#f3f4f6' }}; color:{{ stats.demo_plugin and stats.demo_plugin.isEnabled ? '#166534' : '#4b5563' }}; font-size:0.78rem; font-weight:800; text-transform:uppercase;">
-                        {{ stats.demo_plugin and stats.demo_plugin.isEnabled ? 'Plugin activado' : 'Plugin desactivado' }}
-                    </span>
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#fff7ed; color:#9a3412; font-size:0.78rem; font-weight:800;">
-                        {{ stats.fake_seed_total }} locales demo canónicos
-                    </span>
-                </div>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_demo_batches_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#f97316; color:#fff; text-decoration:none; font-weight:700;">
-                        Abrir panel demo
-                    </a>
-                </div>
-            </article>
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Centro legal</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Documentos y cookies</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Edita privacidad, cookies, términos, comunidad y disclaimers consumidos por Public.
-                </p>
-                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:#eff6ff; color:#1d4ed8; font-size:0.78rem; font-weight:800;">
-                        {{ stats.legal_document_published_total }}/{{ stats.legal_document_total }} publicados
-                    </span>
-                </div>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <a href="{{ path('admin_legal_documents_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
-                        Abrir legales
-                    </a>
-                </div>
-            </article>
 
-            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.15rem; background:#fff;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Configuración del Proxy</p>
-                <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Google Places API</h2>
-                <p style="margin:0.5rem 0 0; color:#4b5563; line-height:1.6;">
-                    Habilita o deshabilita la extracción dinámica de lugares desde Google Maps (Alpha).
-                </p>
-                <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; margin-top:0.9rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0.32rem 0.65rem; background:{{ stats.google_places_plugin and stats.google_places_plugin.isEnabled ? '#dcfce7' : '#f3f4f6' }}; color:{{ stats.google_places_plugin and stats.google_places_plugin.isEnabled ? '#166534' : '#4b5563' }}; font-size:0.78rem; font-weight:800; text-transform:uppercase;">
-                        {{ stats.google_places_plugin and stats.google_places_plugin.isEnabled ? 'Plugin activado' : 'Plugin desactivado' }}
-                    </span>
-                </div>
-                <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1rem;">
-                    <form action="{{ path('admin_system_plugins_toggle', { pluginKey: 'google_places_proxy' }) }}" method="POST" style="margin:0;">
-                        <input type="hidden" name="_token" value="{{ csrf_token('toggle_plugin_google_places_proxy') }}">
-                        <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:{{ stats.google_places_plugin and stats.google_places_plugin.isEnabled ? '#ef4444' : '#22c55e' }}; color:#fff; text-decoration:none; font-weight:700; border:none; cursor:pointer;">
-                            {{ stats.google_places_plugin and stats.google_places_plugin.isEnabled ? 'Desactivar Proxy' : 'Activar Proxy' }}
-                        </button>
-                    </form>
-                    <a href="{{ path('admin_place_category_rules_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
-                        Reglas de categorización
-                    </a>
-                </div>
-            </article>
         </section>
-
-        <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; margin-top:1.5rem; background:#fff;">
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-                <div>
-                    <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Rollups alpha</p>
-                    <h2 style="margin:0.45rem 0 0; font-size:1.2rem; color:#111827;">Interacciones públicas</h2>
-                </div>
-                <a href="{{ path('admin_analytics_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.25rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
-                    Ver tendencias
-                </a>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0.9rem; margin-top:1rem;">
-                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
-                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Favoritos</span>
-                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.favorites_added }}</strong>
-                </article>
-                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
-                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Cómo llegar</span>
-                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.directions_clicked }}</strong>
-                </article>
-                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
-                    <span style="display:block; color:#6b7280; font-size:0.8rem;">WhatsApp</span>
-                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.whatsapp_clicked }}</strong>
-                </article>
-                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
-                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Claims iniciados</span>
-                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.claims_started }}</strong>
-                </article>
-                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
-                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Ubis guardadas</span>
-                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.addresses_saved }}</strong>
-                </article>
-                <article style="border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem;">
-                    <span style="display:block; color:#6b7280; font-size:0.8rem;">Fichas abiertas</span>
-                    <strong style="display:block; margin-top:0.3rem; font-size:1.5rem; color:#111827;">{{ stats.analytics.locations_opened }}</strong>
-                </article>
-            </div>
-            <div style="margin-top:1rem; display:grid; gap:0.55rem;">
-                <p style="margin:0; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Rollups persistidos</p>
-                {% if stats.analytics.latest_rollups is empty %}
-                    <p style="margin:0; color:#64748b;">Aún no hay rollups. Ejecuta <code>php bin/console app:analytics:rollup-daily --date=today</code> o programa el comando diario.</p>
-                {% else %}
-                    <div style="display:grid; gap:0.45rem;">
-                        {% for rollup in stats.analytics.latest_rollups %}
-                            <div style="display:flex; justify-content:space-between; gap:1rem; border:1px solid #e5e7eb; border-radius:12px; padding:0.55rem 0.7rem; color:#334155;">
-                                <span>{{ rollup.rollupDate|date('Y-m-d') }} · {{ rollup.sourceApp }} · {{ rollup.eventName }}</span>
-                                <strong>{{ rollup.eventCount }}</strong>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        </section>
-
-        <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem;">
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-                <div>
-                    <h2 style="margin:0;">Locales canónicos</h2>
-                    <p style="margin:0.35rem 0 0; color:#6b7280; line-height:1.6;">
-                        Primer panel operativo para revisar origen y publicación del feed canónico.
-                    </p>
-                </div>
-                <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-                    <a href="{{ path('admin_locations_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#111827; color:#fff; text-decoration:none; font-weight:700;">
-                        Abrir CRUD
-                    </a>
-                    <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.2rem; border-radius:999px; padding:0.55rem 0.95rem; background:#fff; color:#111827; border:1px solid #d1d5db; text-decoration:none; font-weight:700;">
-                        Limpiar filtros
-                    </a>
-                </div>
-            </div>
-
-            <div style="display:grid; gap:1rem; margin-top:1.25rem;">
-                <div>
-                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por origen</p>
-                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                        {% for source_type in source_types %}
-                            <a
-                                href="{{ path('admin_dashboard', { source_type: source_type, publication_state: filters.publication_state ?: null }) }}"
-                                style="display:inline-flex; align-items:center; gap:0.45rem; border-radius:999px; padding:0.48rem 0.85rem; border:1px solid {{ filters.source_type == source_type ? '#111827' : '#e5e7eb' }}; background:{{ filters.source_type == source_type ? '#111827' : '#fff' }}; color:{{ filters.source_type == source_type ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;"
-                            >
-                                <span>{{ source_type }}</span>
-                                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.4rem; height:1.4rem; border-radius:999px; background:{{ filters.source_type == source_type ? 'rgba(255,255,255,0.14)' : '#f3f4f6' }}; font-size:0.78rem;">
-                                    {{ attribute(stats.locations_by_source, source_type) }}
-                                </span>
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div>
-                    <p style="margin:0 0 0.6rem; color:#6b7280; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em;">Filtrar por publicación</p>
-                    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
-                        {% for publication_state in publication_states %}
-                            <a
-                                href="{{ path('admin_dashboard', { source_type: filters.source_type ?: null, publication_state: publication_state }) }}"
-                                style="display:inline-flex; align-items:center; gap:0.45rem; border-radius:999px; padding:0.48rem 0.85rem; border:1px solid {{ filters.publication_state == publication_state ? '#111827' : '#e5e7eb' }}; background:{{ filters.publication_state == publication_state ? '#111827' : '#fff' }}; color:{{ filters.publication_state == publication_state ? '#fff' : '#374151' }}; text-decoration:none; font-weight:700;"
-                            >
-                                <span>{{ publication_state }}</span>
-                                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:1.4rem; height:1.4rem; border-radius:999px; background:{{ filters.publication_state == publication_state ? 'rgba(255,255,255,0.14)' : '#f3f4f6' }}; font-size:0.78rem;">
-                                    {{ attribute(stats.locations_by_publication, publication_state) }}
-                                </span>
-                            </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-top:1.25rem; display:grid; gap:0.75rem;">
-                {% if stats.latest_locations is empty %}
-                    <p style="margin:0; color:#6b7280;">No hay locales que coincidan con este filtro.</p>
-                {% else %}
-                    {% for location in stats.latest_locations %}
-                        {% set address = location.addresses|first %}
-                        <article style="display:grid; gap:0.7rem; padding:1rem; border-radius:16px; background:#f8fafc; border:1px solid #e5e7eb;">
-                            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-                                <div>
-                                    <strong style="display:block; color:#111827; font-size:1rem;">{{ location.name }}</strong>
-                                    <span style="display:block; margin-top:0.18rem; color:#6b7280;">{{ location.merchant.name }}</span>
-                                </div>
-                                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.sourceType }}</span>
-                                    <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#fff; border:1px solid #d1d5db; color:#374151; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ location.publicationState }}</span>
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
-                                <span>#{{ location.id }}</span>
-                                <span>{{ address ? address.toShortAddress() : 'Sin dirección publicada' }}</span>
-                                <span>{{ location.whatsappEnabled ? 'WhatsApp activo' : 'Sin WhatsApp' }}</span>
-                            </div>
-                        </article>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </section>
-
-        <section style="border: 1px solid #e5e7eb; border-radius: 16px; padding: 1.25rem; margin-top: 1.5rem;">
-            <h2 style="margin-top: 0;">Últimos correos alpha</h2>
-            {% if stats.latest_public_invitations is empty %}
-                <p style="margin: 0; color:#6b7280;">Todavía no hay solicitudes registradas.</p>
-            {% else %}
-                <div style="display:grid; gap:0.75rem;">
-                    {% for invitation in stats.latest_public_invitations %}
-                        <article style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.85rem 0.95rem; border-radius:14px; background:#f8fafc;">
-                            <div>
-                                <strong style="display:block; color:#111827;">{{ invitation.email }}</strong>
-                                <span style="color:#6b7280; font-size:0.9rem;">{{ invitation.createdAt|date('Y-m-d H:i') }}</span>
-                            </div>
-                            <span style="padding:0.32rem 0.6rem; border-radius:999px; background:#fff; border:1px solid #e5e7eb; color:#374151; font-size:0.78rem; font-weight:700; text-transform:uppercase;">{{ invitation.status }}</span>
-                        </article>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </section>
-    </main>
+    </div>
 {% endblock %}

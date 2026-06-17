@@ -1,0 +1,175 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Branding Público | Admin Mi Monchis MX{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1040px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Admin > Configuraciones</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Branding Público y Social Share</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    Define la identidad de la plataforma pública, logos y cómo se verá la app al compartirse en redes sociales.
+                </p>
+            </div>
+            <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
+                Volver al admin
+            </a>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: {{ label == 'success' ? '#dcfce7' : '#fee2e2' }}; color: {{ label == 'success' ? '#166534' : '#991b1b' }}; font-weight: 600;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div style="margin-top: 2rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 2rem;">
+            {{ form_start(form, {'attr': {'enctype': 'multipart/form-data', 'style': 'display: grid; gap: 2rem;'}}) }}
+
+            <section>
+                <h2 style="font-size: 1.25rem; color: #111827; margin: 0 0 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">Identidad General</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                    <div>
+                        {{ form_label(form.app_name, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.app_name, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.theme_color, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.theme_color, {'attr': {'style': 'width: 100%; height: 38px; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.25rem;'}}) }}
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        {{ form_label(form.default_meta_title, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.default_meta_title, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        {{ form_label(form.default_meta_description, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.default_meta_description, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;', 'rows': '3'}}) }}
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 style="font-size: 1.25rem; color: #111827; margin: 0 0 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">Assets Visuales (Imágenes)</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                    <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
+                        {{ form_label(form.logo_horizontal, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.logo_horizontal) }}
+                        <div style="margin-top: 0.5rem;">
+                            {% if current_config.logo_horizontal_url|default(false) %}
+                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem;">Actual:</p>
+                                <img src="{{ current_config.logo_horizontal_url }}" alt="Logo Horizontal" style="max-width: 100%; max-height: 80px; object-fit: contain;">
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
+                        {{ form_label(form.logo_square, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.logo_square) }}
+                        <div style="margin-top: 0.5rem;">
+                            {% if current_config.logo_square_url|default(false) %}
+                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem;">Actual:</p>
+                                <img src="{{ current_config.logo_square_url }}" alt="Logo Square" style="max-width: 100%; max-height: 80px; object-fit: contain;">
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
+                        {{ form_label(form.favicon, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.favicon) }}
+                        <div style="margin-top: 0.5rem;">
+                            {% if current_config.favicon_url|default(false) %}
+                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem;">Actual:</p>
+                                <img src="{{ current_config.favicon_url }}" alt="Favicon" style="max-width: 100%; max-height: 48px; object-fit: contain;">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 style="font-size: 1.25rem; color: #111827; margin: 0 0 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">Social Share (Open Graph & Twitter)</h2>
+                
+                <h3 style="font-size: 1rem; color: #4b5563; margin-top: 1.5rem;">Por Defecto (Open Graph)</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        {{ form_label(form.default_og_title, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.default_og_title, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.default_og_description, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.default_og_description, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;', 'rows': '2'}}) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.default_og_image, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.default_og_image) }}
+                        {% if current_config.social_share.default_og_image|default(false) %}
+                            <div style="margin-top: 0.5rem;">
+                                <img src="{{ current_config.social_share.default_og_image }}" alt="OG Image" style="max-height: 60px;">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1rem; color: #4b5563;">Twitter Cards</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        {{ form_label(form.twitter_card_type, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.twitter_card_type, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.twitter_title, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.twitter_title, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        {{ form_label(form.twitter_description, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.twitter_description, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;', 'rows': '2'}}) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.twitter_image, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
+                        {{ form_widget(form.twitter_image) }}
+                        {% if current_config.social_share.twitter_image|default(false) %}
+                            <div style="margin-top: 0.5rem;">
+                                <img src="{{ current_config.social_share.twitter_image }}" alt="Twitter Image" style="max-height: 60px;">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1rem; color: #4b5563;">Facebook / Threads / Google (Opcionales)</h3>
+                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 1rem;">Si dejas estos vacíos, se usarán los de Open Graph por defecto.</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <!-- Facebook -->
+                    <div style="border: 1px dashed #d1d5db; padding: 1rem; border-radius: 12px;">
+                        <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem;">Facebook</h4>
+                        {{ form_widget(form.facebook_title, {'attr': {'placeholder': 'Título', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem;'}}) }}
+                        {{ form_widget(form.facebook_description, {'attr': {'placeholder': 'Descripción', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem; height: 50px;'}}) }}
+                        {{ form_widget(form.facebook_image) }}
+                    </div>
+                    <!-- Threads -->
+                    <div style="border: 1px dashed #d1d5db; padding: 1rem; border-radius: 12px;">
+                        <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem;">Threads</h4>
+                        {{ form_widget(form.threads_title, {'attr': {'placeholder': 'Título', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem;'}}) }}
+                        {{ form_widget(form.threads_description, {'attr': {'placeholder': 'Descripción', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem; height: 50px;'}}) }}
+                        {{ form_widget(form.threads_image) }}
+                    </div>
+                    <!-- Google -->
+                    <div style="border: 1px dashed #d1d5db; padding: 1rem; border-radius: 12px;">
+                        <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem;">Google</h4>
+                        {{ form_widget(form.google_title, {'attr': {'placeholder': 'Título', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem;'}}) }}
+                        {{ form_widget(form.google_description, {'attr': {'placeholder': 'Descripción', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem; height: 50px;'}}) }}
+                        {{ form_widget(form.google_image) }}
+                    </div>
+                </div>
+
+            </section>
+
+            <div style="margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem; display: flex; justify-content: flex-end;">
+                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.8rem 2rem; background:#111827; color:#fff; font-weight:800; border:none; cursor:pointer; font-size: 1.05rem;">
+                    Guardar Configuración y Subir Archivos
+                </button>
+            </div>
+
+            {{ form_end(form) }}
+        </div>
+    </main>
+{% endblock %}

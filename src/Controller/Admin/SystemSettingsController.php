@@ -20,14 +20,12 @@ final class SystemSettingsController extends AbstractController
     {
         $mapPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::MAP_SETTINGS, 'Configuraciones del mapa');
         $placesPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::GOOGLE_PLACES_PROXY, 'Google Places Proxy', false);
-        $brandingPlugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::PUBLIC_BRANDING, 'Branding público');
 
         return $this->render('admin/system_settings/index.html.twig', [
             'map_settings' => $this->mapSettings($mapPlugin),
             'places_settings' => $this->placesSettings($placesPlugin),
             'places_plugin' => $placesPlugin,
             'places_checklist' => $this->placesOperationalChecklist($placesPlugin),
-            'public_branding' => $this->publicBrandingSettings($brandingPlugin),
         ]);
     }
 
@@ -92,37 +90,6 @@ final class SystemSettingsController extends AbstractController
         return $this->redirectToRoute('admin_system_settings_index');
     }
 
-    #[Route('/public-branding', name: 'public_branding', methods: ['POST'])]
-    public function updatePublicBranding(Request $request, EntityManagerInterface $entityManager): RedirectResponse
-    {
-        if (!$this->isCsrfTokenValid('update_public_branding', (string) $request->request->get('_token'))) {
-            $this->addFlash('error', 'No se pudo validar la solicitud de branding público.');
-
-            return $this->redirectToRoute('admin_system_settings_index');
-        }
-
-        $plugin = $this->findOrCreatePlugin($entityManager, SystemPlugin::PUBLIC_BRANDING, 'Branding público');
-        $settings = $this->publicBrandingSettings($plugin);
-        $settings['app_name'] = $this->boundedString($request->request->getString('app_name', 'Mi Monchis'), 80);
-        $settings['logo_horizontal_url'] = $this->nullableUrl($request->request->getString('logo_horizontal_url', ''));
-        $settings['logo_square_url'] = $this->nullableUrl($request->request->getString('logo_square_url', ''));
-        $settings['favicon_url'] = $this->nullableUrl($request->request->getString('favicon_url', ''));
-        $settings['theme_color'] = $this->themeColor($request->request->getString('theme_color', '#ff7a00'));
-        $settings['default_meta_title'] = $this->boundedString($request->request->getString('default_meta_title', 'Mi Monchis MX'), 120);
-        $settings['default_meta_description'] = $this->boundedString($request->request->getString('default_meta_description', 'Explora locales cerca de ti con Mi Monchis MX.'), 220);
-
-        $plugin
-            ->setIsEnabled(true)
-            ->setStatus(SystemPlugin::STATUS_ACTIVE)
-            ->setConfigJson($settings);
-
-        $entityManager->persist($plugin);
-        $entityManager->flush();
-
-        $this->addFlash('success', 'Branding público actualizado.');
-
-        return $this->redirectToRoute('admin_system_settings_index');
-    }
 
     private function findOrCreatePlugin(EntityManagerInterface $entityManager, string $pluginKey, string $name, bool $defaultEnabled = true): SystemPlugin
     {
@@ -171,21 +138,6 @@ final class SystemSettingsController extends AbstractController
         ], $plugin->getConfigJson() ?? []);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function publicBrandingSettings(SystemPlugin $plugin): array
-    {
-        return array_replace([
-            'app_name' => 'Mi Monchis',
-            'logo_horizontal_url' => '/images/branding/logo-simple-horizontal.png',
-            'logo_square_url' => '/images/branding/logo-simple-square.png',
-            'favicon_url' => '/favicon.ico',
-            'theme_color' => '#ff7a00',
-            'default_meta_title' => 'Mi Monchis MX',
-            'default_meta_description' => 'Explora locales cerca de ti con Mi Monchis MX.',
-        ], $plugin->getConfigJson() ?? []);
-    }
 
     /**
      * @return array<int, array{label: string, enabled: bool, on: string, off: string}>

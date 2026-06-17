@@ -258,6 +258,24 @@ final class LocationFeedController extends AbstractController
             'theme_color' => '#ff7a00',
             'default_meta_title' => 'Mi Monchis MX',
             'default_meta_description' => 'Explora locales cerca de ti con Mi Monchis MX.',
+            'social_share' => [
+                'default_og_title' => '',
+                'default_og_description' => '',
+                'default_og_image' => '',
+                'twitter_card_type' => 'summary_large_image',
+                'twitter_title' => '',
+                'twitter_description' => '',
+                'twitter_image' => '',
+                'facebook_title' => '',
+                'facebook_description' => '',
+                'facebook_image' => '',
+                'threads_title' => '',
+                'threads_description' => '',
+                'threads_image' => '',
+                'google_title' => '',
+                'google_description' => '',
+                'google_image' => '',
+            ]
         ];
 
         try {

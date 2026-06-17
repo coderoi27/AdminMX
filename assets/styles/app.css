@@ -1,5 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-glass-bg: rgba(255, 255, 255, 0.4);
+  --color-glass-border: rgba(255, 255, 255, 0.5);
+}
+
 body {
-    background-color: #f8fafc;
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: #dfdff5;
+  background-image: 
+    radial-gradient(at 40% 20%, hsla(28,100%,74%,0.8) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(189,100%,56%,0.8) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(355,100%,93%,0.8) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(340,100%,76%,0.8) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(22,100%,77%,0.8) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(242,100%,70%,0.8) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, hsla(343,100%,76%,0.8) 0px, transparent 50%);
+  background-attachment: fixed;
+  background-size: cover;
+  min-height: 100vh;
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/40 backdrop-blur-2xl ring-1 ring-white/50 shadow-xl shadow-black/5;
+  }
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-xl ring-1 ring-white/50 shadow-lg shadow-black/5 rounded-[26px];
+  }
+  .glass-btn {
+    @apply bg-white/50 hover:bg-white/70 transition-colors backdrop-blur-md ring-1 ring-white/60 shadow-sm rounded-full text-gray-800 font-semibold px-4 py-2 inline-flex items-center justify-center;
+  }
+  .glass-btn-primary {
+    @apply bg-gray-900/80 hover:bg-gray-900 transition-colors backdrop-blur-md ring-1 ring-gray-700 shadow-sm rounded-full text-white font-semibold px-4 py-2 inline-flex items-center justify-center;
+  }
 }
 
 .admin-error-page {
