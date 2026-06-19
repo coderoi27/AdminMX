@@ -11,6 +11,8 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $claimAccessTokenTtl: '%env(int:CLAIM_ACCESS_TOKEN_TTL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -26,3 +28,29 @@ services:
     App\Controller\Api\Core\ApprovedClaimSyncController:
         arguments:
             $localsCoreSyncToken: '%app.locals_core_sync_token%'
+
+    Aws\S3\S3ClientInterface:
+        factory: ['App\Infrastructure\Storage\ClaimR2ClientFactory', 'create']
+        arguments:
+            $endpoint: '%env(string:CLAIM_R2_ENDPOINT)%'
+            $region: '%env(string:CLAIM_R2_REGION)%'
+            $accessKeyId: '%env(string:CLAIM_R2_ACCESS_KEY_ID)%'
+            $secretAccessKey: '%env(string:CLAIM_R2_SECRET_ACCESS_KEY)%'
+
+    App\Infrastructure\Storage\CloudflareR2ClaimEvidenceStorage:
+        arguments:
+            $s3Client: '@Aws\S3\S3ClientInterface'
+            $bucketName: '%env(string:CLAIM_R2_BUCKET)%'
+            $uploadTtl: '%env(int:CLAIM_R2_UPLOAD_URL_TTL)%'
+            $readTtl: '%env(int:CLAIM_R2_READ_URL_TTL)%'
+            $maxVideoBytes: '%env(int:CLAIM_MAX_VIDEO_BYTES)%'
+            $maxDocumentBytes: '%env(int:CLAIM_MAX_DOCUMENT_BYTES)%'
+
+    App\Domain\Claim\ClaimEvidenceStorageInterface:
+        factory: ['App\Infrastructure\Storage\ClaimEvidenceStorageFactory', 'create']
+        arguments:
+            $provider: '%env(string:CLAIM_STORAGE_PROVIDER)%'
+
+    App\Command\Claim\R2SmokeTestCommand:
+        arguments:
+            $environment: '%kernel.environment%'

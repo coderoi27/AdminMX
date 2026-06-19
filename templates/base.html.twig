@@ -20,6 +20,7 @@
     </head>
     <body class="antialiased text-gray-800">
         <!-- Sidebar -->
+        {% if app.user %}
         <aside class="fixed top-0 left-0 h-screen w-64 glass-panel border-r border-white/40 z-20 flex flex-col">
             <div class="h-16 flex items-center px-6 border-b border-white/20">
                 <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Mi Monchis</span>
@@ -36,9 +37,11 @@
                 </div>
             </nav>
         </aside>
+        {% endif %}
 
         <!-- Main Content -->
-        <div class="pl-64 flex flex-col min-h-screen">
+        <div class="{% if app.user %}pl-64{% endif %} flex flex-col min-h-screen">
+            {% if app.user %}
             <header class="h-16 glass-panel border-b border-white/40 sticky top-0 z-10 flex items-center px-8 justify-between">
                 <h2 class="text-xl font-bold text-gray-800 tracking-tight">{% block header_title %}Panel de Control{% endblock %}</h2>
                 <div class="flex items-center gap-4">
@@ -47,8 +50,9 @@
                     </div>
                 </div>
             </header>
+            {% endif %}
             
-            <main class="flex-1 p-8">
+            <main class="flex-1 {% if app.user %}p-8{% endif %}">
                 {% block body %}{% endblock %}
             </main>
         </div>

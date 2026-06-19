@@ -6,6 +6,7 @@ namespace App\Controller\Api\Core;
 
 use App\Entity\Core\LocationClaimRequest;
 use Doctrine\ORM\EntityManagerInterface;
+use App\UseCase\Claim\CreateLocationClaimDraft;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class LocationClaimCollectionController extends AbstractController
 {
     #[Route('/api/v1/location-claims', name: 'api_core_location_claims_collection', methods: ['GET', 'POST'])]
-    public function __invoke(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function __invoke(Request $request, EntityManagerInterface $entityManager, CreateLocationClaimDraft $createDraft): JsonResponse
     {
         if ($request->isMethod('GET')) {
             $claims = $entityManager->getRepository(LocationClaimRequest::class)->findBy([], ['id' => 'DESC'], 50);
@@ -46,6 +47,28 @@ final class LocationClaimCollectionController extends AbstractController
             }
         }
 
+        if (isset($payload['submission_mode']) && $payload['submission_mode'] === 'assisted') {
+            $claim = $createDraft->execute(
+                (string) $payload['location_name'],
+                (string) $payload['email'],
+                isset($payload['external_source_key']) ? (string) $payload['external_source_key'] : null,
+                isset($payload['canonical_location_id']) ? (int) $payload['canonical_location_id'] : null
+            );
+
+            return $this->json([
+                'data' => [
+                    'claim_id' => $claim->getId(),
+                    'claim_uuid' => $claim->getClaimUuid(),
+                    'status' => $claim->getStatus(),
+                    'last_completed_step' => null,
+                    'next_action' => 'request_email_otp'
+                ],
+                'meta' => [],
+                'errors' => [],
+            ], 201);
+        }
+
+        // Legacy synchronous creation
         $claim = (new LocationClaimRequest())
             ->setSourceType((string) $payload['source_type'])
             ->setCanonicalLocationId(isset($payload['canonical_location_id']) ? (int) $payload['canonical_location_id'] : null)
@@ -57,6 +80,10 @@ final class LocationClaimCollectionController extends AbstractController
             ->setWhatsappE164(isset($payload['whatsapp_e164']) ? (string) $payload['whatsapp_e164'] : null)
             ->setMessage(isset($payload['message']) ? (string) $payload['message'] : null)
             ->setPrefillPayloadJson(isset($payload['prefill_payload']) && is_array($payload['prefill_payload']) ? $payload['prefill_payload'] : null);
+        
+        $reflection = new \ReflectionClass($claim);
+        $propUuid = $reflection->getProperty('claimUuid');
+        $propUuid->setValue($claim, \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
 
         $entityManager->persist($claim);
         $entityManager->flush();

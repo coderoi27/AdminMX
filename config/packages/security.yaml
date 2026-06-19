@@ -13,6 +13,12 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        api_claims:
+            pattern: ^/api/v1/location-claims
+            stateless: true
+            custom_authenticators:
+                - App\Security\ClaimAccessTokenAuthenticator
+
         main:
             lazy: true
             provider: admin_users
@@ -31,6 +37,7 @@ security:
         - { path: ^/api/v1/locals/approved-claims$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api/v1/public-invitations$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/v1/public-invitations/validate$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/v1/location-claims, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_ADMIN }
         - { path: ^/, roles: ROLE_ADMIN }
 

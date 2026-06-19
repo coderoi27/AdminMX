@@ -73,6 +73,72 @@ class LocationClaimRequest
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
+    #[ORM\Column(type: 'guid', nullable: true)]
+    private ?string $claimUuid = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $claimantRole = null;
+
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $claimantPhoneE164 = null;
+
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $businessPhoneE164 = null;
+
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $proposedName = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $proposedAddressJson = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $confirmedLatitude = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $confirmedLongitude = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $emailVerifiedAt = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $legalAcceptanceReference = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $resumeTokenHash = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $resumeTokenExpiresAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $resumeTokenRevokedAt = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $lastCompletedStep = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $submittedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $underReviewAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $needsInfoAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $approvedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $rejectedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $convertedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $expiresAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $cancelledAt = null;
+
     #[ORM\PrePersist]
     public function onCreate(): void
     {
@@ -90,6 +156,18 @@ class LocationClaimRequest
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getClaimUuid(): ?string
+    {
+        return $this->claimUuid;
+    }
+
+    public function setClaimUuid(?string $claimUuid): self
+    {
+        $this->claimUuid = $claimUuid;
+
+        return $this;
     }
 
     public function getSourceType(): string
