@@ -7,116 +7,177 @@ namespace App\Controller\Admin;
 use App\Entity\Core\SystemPlugin;
 use App\Form\PublicBrandingType;
 use App\Service\BrandingUploader;
+use App\Service\PublicBrandingConfig;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/system/public-branding', name: 'admin_public_branding_')]
 final class PublicBrandingController extends AbstractController
 {
+    /** @var array<string, array{group: ?string, key: string}> */
+    private const FILE_FIELDS = [
+        'logo_horizontal' => ['group' => null, 'key' => 'logo_horizontal_url'],
+        'logo_square' => ['group' => null, 'key' => 'logo_square_url'],
+        'favicon' => ['group' => null, 'key' => 'favicon_url'],
+        'default_og_image' => ['group' => 'social_share', 'key' => 'default_og_image'],
+        'twitter_image' => ['group' => 'social_share', 'key' => 'twitter_image'],
+        'facebook_image' => ['group' => 'social_share', 'key' => 'facebook_image'],
+        'threads_image' => ['group' => 'social_share', 'key' => 'threads_image'],
+        'google_image' => ['group' => 'social_share', 'key' => 'google_image'],
+    ];
+
     #[Route('', name: 'index', methods: ['GET', 'POST'])]
-    public function index(Request $request, EntityManagerInterface $entityManager, BrandingUploader $uploader): Response
-    {
+    public function index(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        BrandingUploader $uploader,
+        PublicBrandingConfig $brandingConfig,
+    ): Response {
         $plugin = $this->findOrCreatePlugin($entityManager);
-        $currentConfig = $plugin->getConfigJson() ?? [];
-
-        // Aseguramos que la estructura inicial exista
-        $socialShare = $currentConfig['social_share'] ?? [];
-        $formData = array_merge([
-            'app_name' => $currentConfig['app_name'] ?? 'Mi Monchis',
-            'theme_color' => $currentConfig['theme_color'] ?? '#ff7a00',
-            'default_meta_title' => $currentConfig['default_meta_title'] ?? 'Mi Monchis MX',
-            'default_meta_description' => $currentConfig['default_meta_description'] ?? '',
-            'default_og_title' => $socialShare['default_og_title'] ?? '',
-            'default_og_description' => $socialShare['default_og_description'] ?? '',
-            'twitter_card_type' => $socialShare['twitter_card_type'] ?? 'summary_large_image',
-            'twitter_title' => $socialShare['twitter_title'] ?? '',
-            'twitter_description' => $socialShare['twitter_description'] ?? '',
-            'facebook_title' => $socialShare['facebook_title'] ?? '',
-            'facebook_description' => $socialShare['facebook_description'] ?? '',
-            'threads_title' => $socialShare['threads_title'] ?? '',
-            'threads_description' => $socialShare['threads_description'] ?? '',
-            'google_title' => $socialShare['google_title'] ?? '',
-            'google_description' => $socialShare['google_description'] ?? '',
-        ]);
-
-        $form = $this->createForm(PublicBrandingType::class, $formData);
+        $currentConfig = $brandingConfig->normalize($plugin->getConfigJson() ?? []);
+        $form = $this->createForm(PublicBrandingType::class, $this->formData($currentConfig));
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            /** @var array<string, mixed> $data */
             $data = $form->getData();
+            $newConfig = $this->mergeTextConfig($currentConfig, $data);
+            $newAssetUrls = [];
+            $replacedAssetUrls = [];
 
-            $newConfig = [
-                'app_name' => $data['app_name'],
-                'theme_color' => $data['theme_color'],
-                'default_meta_title' => $data['default_meta_title'],
-                'default_meta_description' => $data['default_meta_description'],
-                'social_share' => [
-                    'default_og_title' => $data['default_og_title'],
-                    'default_og_description' => $data['default_og_description'],
-                    'twitter_card_type' => $data['twitter_card_type'],
-                    'twitter_title' => $data['twitter_title'],
-                    'twitter_description' => $data['twitter_description'],
-                    'facebook_title' => $data['facebook_title'],
-                    'facebook_description' => $data['facebook_description'],
-                    'threads_title' => $data['threads_title'],
-                    'threads_description' => $data['threads_description'],
-                    'google_title' => $data['google_title'],
-                    'google_description' => $data['google_description'],
-                ]
-            ];
-
-            // Retener las URLs existentes por defecto
-            $newConfig['logo_horizontal_url'] = $currentConfig['logo_horizontal_url'] ?? null;
-            $newConfig['logo_square_url'] = $currentConfig['logo_square_url'] ?? null;
-            $newConfig['favicon_url'] = $currentConfig['favicon_url'] ?? null;
-            
-            $newConfig['social_share']['default_og_image'] = $socialShare['default_og_image'] ?? null;
-            $newConfig['social_share']['twitter_image'] = $socialShare['twitter_image'] ?? null;
-            $newConfig['social_share']['facebook_image'] = $socialShare['facebook_image'] ?? null;
-            $newConfig['social_share']['threads_image'] = $socialShare['threads_image'] ?? null;
-            $newConfig['social_share']['google_image'] = $socialShare['google_image'] ?? null;
-
-            // Procesar imágenes subidas
-            $fileFields = [
-                'logo_horizontal' => ['group' => null, 'key' => 'logo_horizontal_url'],
-                'logo_square' => ['group' => null, 'key' => 'logo_square_url'],
-                'favicon' => ['group' => null, 'key' => 'favicon_url'],
-                'default_og_image' => ['group' => 'social_share', 'key' => 'default_og_image'],
-                'twitter_image' => ['group' => 'social_share', 'key' => 'twitter_image'],
-                'facebook_image' => ['group' => 'social_share', 'key' => 'facebook_image'],
-                'threads_image' => ['group' => 'social_share', 'key' => 'threads_image'],
-                'google_image' => ['group' => 'social_share', 'key' => 'google_image'],
-            ];
-
-            foreach ($fileFields as $fieldName => $mapping) {
-                $file = $form->get($fieldName)->getData();
-                if ($file) {
-                    $url = $uploader->upload($file, $fieldName . '-');
-                    if ($mapping['group']) {
-                        $newConfig[$mapping['group']][$mapping['key']] = $url;
-                    } else {
-                        $newConfig[$mapping['key']] = $url;
+            try {
+                foreach (self::FILE_FIELDS as $fieldName => $mapping) {
+                    $file = $form->get($fieldName)->getData();
+                    if (!$file instanceof UploadedFile) {
+                        continue;
                     }
+
+                    $asset = $uploader->upload($file, $fieldName);
+                    $newAssetUrls[] = $asset['url'];
+                    $oldUrl = $this->assetUrl($newConfig, $mapping['group'], $mapping['key']);
+                    if ($oldUrl !== null && $oldUrl !== $asset['url']) {
+                        $replacedAssetUrls[] = $oldUrl;
+                    }
+
+                    if ($mapping['group'] !== null) {
+                        $newConfig[$mapping['group']][$mapping['key']] = $asset['url'];
+                    } else {
+                        $newConfig[$mapping['key']] = $asset['url'];
+                    }
+                    $newConfig['asset_manifest'][$fieldName] = $asset;
                 }
+
+                $plugin
+                    ->setConfigJson($brandingConfig->normalize($newConfig))
+                    ->setIsEnabled(true)
+                    ->setStatus(SystemPlugin::STATUS_ACTIVE);
+
+                $entityManager->persist($plugin);
+                $entityManager->flush();
+            } catch (\Throwable $exception) {
+                foreach ($newAssetUrls as $newAssetUrl) {
+                    $uploader->deleteByPublicUrl($newAssetUrl);
+                }
+
+                $this->addFlash('error', 'No se pudo guardar el branding. Los archivos nuevos fueron descartados de forma segura.');
+
+                return $this->renderPage($form->createView(), $currentConfig, $brandingConfig);
             }
 
-            $plugin->setConfigJson($newConfig)
-                   ->setIsEnabled(true)
-                   ->setStatus(SystemPlugin::STATUS_ACTIVE);
-                   
-            $entityManager->persist($plugin);
-            $entityManager->flush();
+            foreach (array_unique($replacedAssetUrls) as $replacedAssetUrl) {
+                $uploader->deleteByPublicUrl($replacedAssetUrl);
+            }
 
-            $this->addFlash('success', 'Configuración de Branding y Social Share actualizada.');
+            $this->addFlash('success', 'Branding público y Social Share actualizados.');
+
             return $this->redirectToRoute('admin_public_branding_index');
         }
 
+        return $this->renderPage($form->createView(), $currentConfig, $brandingConfig);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     *
+     * @return array<string, mixed>
+     */
+    private function formData(array $config): array
+    {
+        $social = $config['social_share'];
+
+        return [
+            'app_name' => $config['app_name'],
+            'theme_color' => $config['theme_color'],
+            'default_meta_title' => $config['default_meta_title'],
+            'default_meta_description' => $config['default_meta_description'],
+            'default_og_title' => $social['default_og_title'],
+            'default_og_description' => $social['default_og_description'],
+            'twitter_card_type' => $social['twitter_card_type'],
+            'twitter_title' => $social['twitter_title'],
+            'twitter_description' => $social['twitter_description'],
+            'facebook_title' => $social['facebook_title'],
+            'facebook_description' => $social['facebook_description'],
+            'threads_title' => $social['threads_title'],
+            'threads_description' => $social['threads_description'],
+            'google_title' => $social['google_title'],
+            'google_description' => $social['google_description'],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $currentConfig
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    private function mergeTextConfig(array $currentConfig, array $data): array
+    {
+        $config = $currentConfig;
+        $config['app_name'] = trim((string) $data['app_name']);
+        $config['theme_color'] = strtolower((string) $data['theme_color']);
+        $config['default_meta_title'] = trim((string) $data['default_meta_title']);
+        $config['default_meta_description'] = trim((string) $data['default_meta_description']);
+
+        foreach ([
+            'default_og_title',
+            'default_og_description',
+            'twitter_card_type',
+            'twitter_title',
+            'twitter_description',
+            'facebook_title',
+            'facebook_description',
+            'threads_title',
+            'threads_description',
+            'google_title',
+            'google_description',
+        ] as $key) {
+            $config['social_share'][$key] = trim((string) ($data[$key] ?? ''));
+        }
+
+        return $config;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function assetUrl(array $config, ?string $group, string $key): ?string
+    {
+        $value = $group !== null ? ($config[$group][$key] ?? null) : ($config[$key] ?? null);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    private function renderPage(FormView $formView, array $config, PublicBrandingConfig $brandingConfig): Response
+    {
         return $this->render('admin/public_branding/index.html.twig', [
-            'form' => $form->createView(),
-            'current_config' => $currentConfig,
+            'form' => $formView,
+            'current_config' => $config,
+            'previews' => $brandingConfig->resolvedPreviews($config),
         ]);
     }
 

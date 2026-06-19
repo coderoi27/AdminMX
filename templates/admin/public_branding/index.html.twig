@@ -1,175 +1,243 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Branding Público | Admin Mi Monchis MX{% endblock %}
+{% block title %}Branding Público y Social Share | Admin Mi Monchis MX{% endblock %}
+{% block header_title %}Branding Público y Social Share{% endblock %}
 
 {% block body %}
-    <main style="max-width: 1040px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-            <div>
-                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Admin > Configuraciones</p>
-                <h1 style="margin:0; font-size:2rem; color:#111827;">Branding Público y Social Share</h1>
-                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
-                    Define la identidad de la plataforma pública, logos y cómo se verá la app al compartirse en redes sociales.
+    <div class="mx-auto max-w-[1500px] space-y-6">
+        <header class="flex flex-wrap items-start justify-between gap-4">
+            <div class="max-w-3xl">
+                <p class="mb-2 text-xs font-black uppercase tracking-[0.18em] text-orange-600">Configuración global</p>
+                <h1 class="m-0 text-3xl font-black tracking-tight text-slate-950">Branding Público y Social Share</h1>
+                <p class="mt-3 text-base leading-7 text-slate-600">
+                    Administra identidad, assets y metadata social desde un solo lugar. Public consume este contrato; no pertenece a mapa ni a Google Places.
                 </p>
             </div>
-            <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
-                Volver al admin
-            </a>
-        </div>
+            <a href="{{ path('admin_dashboard') }}" class="glass-btn">Volver al dashboard</a>
+        </header>
 
         {% for label, messages in app.flashes %}
             {% for message in messages %}
-                <div style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: {{ label == 'success' ? '#dcfce7' : '#fee2e2' }}; color: {{ label == 'success' ? '#166534' : '#991b1b' }}; font-weight: 600;">
+                <div class="rounded-2xl border px-4 py-3 font-semibold {{ label == 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800' }}">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endfor %}
 
-        <div style="margin-top: 2rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 2rem;">
-            {{ form_start(form, {'attr': {'enctype': 'multipart/form-data', 'style': 'display: grid; gap: 2rem;'}}) }}
+        {{ form_start(form, {
+            attr: {
+                enctype: 'multipart/form-data',
+                class: 'grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]',
+                'data-controller': 'branding-preview',
+                'data-action': 'input->branding-preview#update change->branding-preview#update'
+            }
+        }) }}
+            <div class="space-y-6">
+                {% if not form.vars.valid %}
+                    <section class="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-rose-800">
+                        <h2 class="m-0 text-base font-black">Revisa los campos marcados</h2>
+                        <div class="mt-2 text-sm">{{ form_errors(form) }}</div>
+                    </section>
+                {% endif %}
 
-            <section>
-                <h2 style="font-size: 1.25rem; color: #111827; margin: 0 0 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">Identidad General</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
-                    <div>
-                        {{ form_label(form.app_name, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.app_name, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                <section class="glass-card p-6 md:p-8">
+                    <div class="mb-6 border-b border-white/60 pb-5">
+                        <p class="m-0 text-xs font-black uppercase tracking-[0.14em] text-slate-400">01 · Base</p>
+                        <h2 class="mt-2 text-xl font-black text-slate-950">Identidad y SEO general</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Estos valores son el fallback para todas las plataformas cuando no existe una personalización.</p>
                     </div>
-                    <div>
-                        {{ form_label(form.theme_color, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.theme_color, {'attr': {'style': 'width: 100%; height: 38px; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.25rem;'}}) }}
-                    </div>
-                    <div style="grid-column: 1 / -1;">
-                        {{ form_label(form.default_meta_title, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.default_meta_title, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
-                    </div>
-                    <div style="grid-column: 1 / -1;">
-                        {{ form_label(form.default_meta_description, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.default_meta_description, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;', 'rows': '3'}}) }}
-                    </div>
-                </div>
-            </section>
 
-            <section>
-                <h2 style="font-size: 1.25rem; color: #111827; margin: 0 0 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">Assets Visuales (Imágenes)</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                    <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
-                        {{ form_label(form.logo_horizontal, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.logo_horizontal) }}
-                        <div style="margin-top: 0.5rem;">
-                            {% if current_config.logo_horizontal_url|default(false) %}
-                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem;">Actual:</p>
-                                <img src="{{ current_config.logo_horizontal_url }}" alt="Logo Horizontal" style="max-width: 100%; max-height: 80px; object-fit: contain;">
-                            {% endif %}
-                        </div>
+                    <div class="grid gap-5 md:grid-cols-[minmax(0,1fr)_150px]">
+                        <label class="grid gap-2">
+                            <span class="text-sm font-bold text-slate-800">{{ form.app_name.vars.label }}</span>
+                            {{ form_widget(form.app_name, {attr: {class: 'rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 outline-none focus:border-orange-400', maxlength: 80, 'data-branding-preview-target': 'appNameInput'}}) }}
+                            <span class="text-xs text-slate-500">Nombre visible de la web app.</span>
+                            {{ form_errors(form.app_name) }}
+                        </label>
+                        <label class="grid gap-2">
+                            <span class="text-sm font-bold text-slate-800">{{ form.theme_color.vars.label }}</span>
+                            {{ form_widget(form.theme_color, {attr: {class: 'h-12 w-full rounded-2xl border border-slate-200 bg-white p-1'}}) }}
+                            <span class="text-xs text-slate-500">Usado en navegador/PWA.</span>
+                            {{ form_errors(form.theme_color) }}
+                        </label>
+                        <label class="grid gap-2 md:col-span-2">
+                            <span class="text-sm font-bold text-slate-800">{{ form.default_meta_title.vars.label }}</span>
+                            {{ form_widget(form.default_meta_title, {attr: {class: 'rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 outline-none focus:border-orange-400', maxlength: 120, 'data-branding-preview-target': 'baseTitleInput'}}) }}
+                            <span class="text-xs text-slate-500">Recomendado: 50–60 caracteres.</span>
+                            {{ form_errors(form.default_meta_title) }}
+                        </label>
+                        <label class="grid gap-2 md:col-span-2">
+                            <span class="text-sm font-bold text-slate-800">{{ form.default_meta_description.vars.label }}</span>
+                            {{ form_widget(form.default_meta_description, {attr: {class: 'min-h-28 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 outline-none focus:border-orange-400', maxlength: 220, 'data-branding-preview-target': 'baseDescriptionInput'}}) }}
+                            <span class="text-xs text-slate-500">Recomendado: 140–160 caracteres.</span>
+                            {{ form_errors(form.default_meta_description) }}
+                        </label>
                     </div>
-                    <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
-                        {{ form_label(form.logo_square, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.logo_square) }}
-                        <div style="margin-top: 0.5rem;">
-                            {% if current_config.logo_square_url|default(false) %}
-                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem;">Actual:</p>
-                                <img src="{{ current_config.logo_square_url }}" alt="Logo Square" style="max-width: 100%; max-height: 80px; object-fit: contain;">
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; background: #f9fafb;">
-                        {{ form_label(form.favicon, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.favicon) }}
-                        <div style="margin-top: 0.5rem;">
-                            {% if current_config.favicon_url|default(false) %}
-                                <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem;">Actual:</p>
-                                <img src="{{ current_config.favicon_url }}" alt="Favicon" style="max-width: 100%; max-height: 48px; object-fit: contain;">
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <section>
-                <h2 style="font-size: 1.25rem; color: #111827; margin: 0 0 1rem; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem;">Social Share (Open Graph & Twitter)</h2>
-                
-                <h3 style="font-size: 1rem; color: #4b5563; margin-top: 1.5rem;">Por Defecto (Open Graph)</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                    <div>
-                        {{ form_label(form.default_og_title, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.default_og_title, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
+                <section class="glass-card p-6 md:p-8">
+                    <div class="mb-6 border-b border-white/60 pb-5">
+                        <p class="m-0 text-xs font-black uppercase tracking-[0.14em] text-slate-400">02 · Archivos</p>
+                        <h2 class="mt-2 text-xl font-black text-slate-950">Assets visuales</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Selecciona archivos desde tu equipo. Admin los almacena y reemplaza el asset anterior después de guardar correctamente.</p>
                     </div>
-                    <div>
-                        {{ form_label(form.default_og_description, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.default_og_description, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;', 'rows': '2'}}) }}
+
+                    <div class="grid gap-5 lg:grid-cols-3">
+                        {% set brand_assets = [
+                            {field: form.logo_horizontal, slot: 'logo_horizontal', title: 'Logo horizontal', help: 'Cabeceras y metadata. Máx. 2 MB.', url: current_config.logo_horizontal_url, class: 'h-20 w-full'},
+                            {field: form.logo_square, slot: 'logo_square', title: 'Logo cuadrado', help: 'Perfil, icono y fallback social. Máx. 2 MB.', url: current_config.logo_square_url, class: 'h-20 w-20'},
+                            {field: form.favicon, slot: 'favicon', title: 'Favicon', help: 'ICO, PNG o SVG seguro. Máx. 2 MB.', url: current_config.favicon_url, class: 'h-12 w-12'}
+                        ] %}
+                        {% for asset in brand_assets %}
+                            <article class="flex min-w-0 flex-col rounded-3xl border border-white/70 bg-white/60 p-4 shadow-sm">
+                                <div class="flex min-h-24 items-center justify-center rounded-2xl bg-slate-100/80 p-3">
+                                    {% if asset.url %}
+                                        <img src="{{ asset.url }}" alt="{{ asset.title }} actual" class="{{ asset.class }} object-contain">
+                                    {% else %}
+                                        <span class="text-sm font-bold text-slate-400">Sin asset</span>
+                                    {% endif %}
+                                </div>
+                                <h3 class="mb-0 mt-4 text-base font-black text-slate-900">{{ asset.title }}</h3>
+                                <p class="mb-4 mt-1 min-h-10 text-xs leading-5 text-slate-500">{{ asset.help }}</p>
+                                {{ form_widget(asset.field, {attr: {class: 'block w-full rounded-xl border border-slate-200 bg-white p-2 text-xs', 'data-action': 'change->branding-preview#previewFile'}}) }}
+                                <div class="mt-2 text-xs text-rose-700">{{ form_errors(asset.field) }}</div>
+                                {% set manifest = attribute(current_config.asset_manifest, asset.slot)|default(null) %}
+                                {% if manifest %}
+                                    <p class="mt-3 break-all text-[0.7rem] leading-4 text-slate-400">{{ manifest.mime_type }} · {{ (manifest.size_bytes / 1024)|round }} KB</p>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
                     </div>
-                    <div>
-                        {{ form_label(form.default_og_image, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.default_og_image) }}
-                        {% if current_config.social_share.default_og_image|default(false) %}
-                            <div style="margin-top: 0.5rem;">
-                                <img src="{{ current_config.social_share.default_og_image }}" alt="OG Image" style="max-height: 60px;">
+                </section>
+
+                <section class="glass-card p-6 md:p-8">
+                    <div class="mb-6 border-b border-white/60 pb-5">
+                        <p class="m-0 text-xs font-black uppercase tracking-[0.14em] text-slate-400">03 · Distribución</p>
+                        <h2 class="mt-2 text-xl font-black text-slate-950">Social Share</h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-600">Open Graph funciona como fallback. Completa una red solo cuando necesites copy o imagen específica.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <details open class="rounded-3xl border border-slate-200 bg-white/65 p-5">
+                            <summary class="cursor-pointer font-black text-slate-900">Base · Open Graph</summary>
+                            <div class="mt-5 grid gap-4 md:grid-cols-2">
+                                <label class="grid gap-2">
+                                    <span class="text-sm font-bold text-slate-700">{{ form.default_og_title.vars.label }}</span>
+                                    {{ form_widget(form.default_og_title, {attr: {class: 'rounded-2xl border border-slate-200 bg-white px-4 py-3', maxlength: 120, 'data-branding-preview-target': 'ogTitleInput'}}) }}
+                                    {{ form_errors(form.default_og_title) }}
+                                </label>
+                                <label class="grid gap-2 md:row-span-2">
+                                    <span class="text-sm font-bold text-slate-700">Imagen Open Graph</span>
+                                    {% if current_config.social_share.default_og_image %}<img src="{{ current_config.social_share.default_og_image }}" alt="Open Graph actual" class="h-32 w-full rounded-2xl bg-slate-100 object-cover">{% endif %}
+                                    {{ form_widget(form.default_og_image, {attr: {class: 'block w-full rounded-xl border border-slate-200 bg-white p-2 text-xs', 'data-action': 'change->branding-preview#previewFile', 'data-image-preview-target': 'baseImagePreview'}}) }}
+                                    {{ form_errors(form.default_og_image) }}
+                                </label>
+                                <label class="grid gap-2">
+                                    <span class="text-sm font-bold text-slate-700">{{ form.default_og_description.vars.label }}</span>
+                                    {{ form_widget(form.default_og_description, {attr: {class: 'min-h-24 rounded-2xl border border-slate-200 bg-white px-4 py-3', maxlength: 220, 'data-branding-preview-target': 'ogDescriptionInput'}}) }}
+                                    {{ form_errors(form.default_og_description) }}
+                                </label>
                             </div>
-                        {% endif %}
+                        </details>
+
+                        {% set networks = [
+                            {name: 'Facebook', title: form.facebook_title, description: form.facebook_description, image: form.facebook_image, title_target: 'facebookTitleInput', description_target: 'facebookDescriptionInput', image_target: 'facebookImagePreview', current_image: current_config.social_share.facebook_image},
+                            {name: 'X / Twitter', title: form.twitter_title, description: form.twitter_description, image: form.twitter_image, title_target: 'twitterTitleInput', description_target: 'twitterDescriptionInput', image_target: 'twitterImagePreview', current_image: current_config.social_share.twitter_image},
+                            {name: 'Threads', title: form.threads_title, description: form.threads_description, image: form.threads_image, title_target: 'threadsTitleInput', description_target: 'threadsDescriptionInput', image_target: 'threadsImagePreview', current_image: current_config.social_share.threads_image},
+                            {name: 'Google', title: form.google_title, description: form.google_description, image: form.google_image, title_target: 'googleTitleInput', description_target: 'googleDescriptionInput', image_target: 'googleImagePreview', current_image: current_config.social_share.google_image}
+                        ] %}
+
+                        {% for network in networks %}
+                            <details class="rounded-3xl border border-slate-200 bg-white/65 p-5">
+                                <summary class="cursor-pointer font-black text-slate-900">{{ network.name }} <span class="ml-2 text-xs font-medium text-slate-400">opcional · hereda Open Graph</span></summary>
+                                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                                    {% if network.name == 'X / Twitter' %}
+                                        <label class="grid gap-2 md:col-span-2">
+                                            <span class="text-sm font-bold text-slate-700">{{ form.twitter_card_type.vars.label }}</span>
+                                            {{ form_widget(form.twitter_card_type, {attr: {class: 'rounded-2xl border border-slate-200 bg-white px-4 py-3'}}) }}
+                                        </label>
+                                    {% endif %}
+                                    <label class="grid gap-2">
+                                        <span class="text-sm font-bold text-slate-700">{{ network.title.vars.label }}</span>
+                                        {{ form_widget(network.title, {attr: {class: 'rounded-2xl border border-slate-200 bg-white px-4 py-3', maxlength: 120, 'data-branding-preview-target': network.title_target}}) }}
+                                        {{ form_errors(network.title) }}
+                                    </label>
+                                    <label class="grid gap-2 md:row-span-2">
+                                        <span class="text-sm font-bold text-slate-700">Imagen {{ network.name }}</span>
+                                        {% if network.current_image %}<img src="{{ network.current_image }}" alt="{{ network.name }} actual" class="h-32 w-full rounded-2xl bg-slate-100 object-cover">{% endif %}
+                                        {{ form_widget(network.image, {attr: {class: 'block w-full rounded-xl border border-slate-200 bg-white p-2 text-xs', 'data-action': 'change->branding-preview#previewFile', 'data-image-preview-target': network.image_target}}) }}
+                                        {{ form_errors(network.image) }}
+                                    </label>
+                                    <label class="grid gap-2">
+                                        <span class="text-sm font-bold text-slate-700">{{ network.description.vars.label }}</span>
+                                        {{ form_widget(network.description, {attr: {class: 'min-h-24 rounded-2xl border border-slate-200 bg-white px-4 py-3', maxlength: 220, 'data-branding-preview-target': network.description_target}}) }}
+                                        {{ form_errors(network.description) }}
+                                    </label>
+                                </div>
+                            </details>
+                        {% endfor %}
                     </div>
+                </section>
+
+                <div class="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-2xl backdrop-blur-xl">
+                    <p class="m-0 text-sm text-slate-600">Los nuevos archivos sustituyen el slot actual después de persistir correctamente.</p>
+                    <button type="submit" class="glass-btn-primary min-h-12 px-6">Guardar branding y assets</button>
                 </div>
-
-                <h3 style="font-size: 1rem; color: #4b5563;">Twitter Cards</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                    <div>
-                        {{ form_label(form.twitter_card_type, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.twitter_card_type, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
-                    </div>
-                    <div>
-                        {{ form_label(form.twitter_title, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.twitter_title, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;'}}) }}
-                    </div>
-                    <div style="grid-column: 1 / -1;">
-                        {{ form_label(form.twitter_description, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.twitter_description, {'attr': {'style': 'width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.5rem;', 'rows': '2'}}) }}
-                    </div>
-                    <div>
-                        {{ form_label(form.twitter_image, null, {'label_attr': {'style': 'display: block; font-weight: 700; margin-bottom: 0.25rem;'}}) }}
-                        {{ form_widget(form.twitter_image) }}
-                        {% if current_config.social_share.twitter_image|default(false) %}
-                            <div style="margin-top: 0.5rem;">
-                                <img src="{{ current_config.social_share.twitter_image }}" alt="Twitter Image" style="max-height: 60px;">
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <h3 style="font-size: 1rem; color: #4b5563;">Facebook / Threads / Google (Opcionales)</h3>
-                <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 1rem;">Si dejas estos vacíos, se usarán los de Open Graph por defecto.</p>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                    <!-- Facebook -->
-                    <div style="border: 1px dashed #d1d5db; padding: 1rem; border-radius: 12px;">
-                        <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem;">Facebook</h4>
-                        {{ form_widget(form.facebook_title, {'attr': {'placeholder': 'Título', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem;'}}) }}
-                        {{ form_widget(form.facebook_description, {'attr': {'placeholder': 'Descripción', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem; height: 50px;'}}) }}
-                        {{ form_widget(form.facebook_image) }}
-                    </div>
-                    <!-- Threads -->
-                    <div style="border: 1px dashed #d1d5db; padding: 1rem; border-radius: 12px;">
-                        <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem;">Threads</h4>
-                        {{ form_widget(form.threads_title, {'attr': {'placeholder': 'Título', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem;'}}) }}
-                        {{ form_widget(form.threads_description, {'attr': {'placeholder': 'Descripción', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem; height: 50px;'}}) }}
-                        {{ form_widget(form.threads_image) }}
-                    </div>
-                    <!-- Google -->
-                    <div style="border: 1px dashed #d1d5db; padding: 1rem; border-radius: 12px;">
-                        <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem;">Google</h4>
-                        {{ form_widget(form.google_title, {'attr': {'placeholder': 'Título', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem;'}}) }}
-                        {{ form_widget(form.google_description, {'attr': {'placeholder': 'Descripción', 'style': 'width: 100%; margin-bottom: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem; height: 50px;'}}) }}
-                        {{ form_widget(form.google_image) }}
-                    </div>
-                </div>
-
-            </section>
-
-            <div style="margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem; display: flex; justify-content: flex-end;">
-                <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.8rem 2rem; background:#111827; color:#fff; font-weight:800; border:none; cursor:pointer; font-size: 1.05rem;">
-                    Guardar Configuración y Subir Archivos
-                </button>
             </div>
 
-            {{ form_end(form) }}
-        </div>
-    </main>
+            <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
+                <div class="glass-card p-5">
+                    <p class="m-0 text-xs font-black uppercase tracking-[0.14em] text-slate-400">Preview en vivo</p>
+                    <h2 class="mt-2 text-lg font-black text-slate-950">Cómo se compartirá</h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">Vista aproximada. Cada plataforma puede recortar texto e imagen de forma distinta.</p>
+                </div>
+
+                <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
+                    <img src="{{ previews.open_graph.image }}" alt="Preview base" class="h-44 w-full bg-slate-100 object-cover" data-branding-preview-target="baseImagePreview" {{ previews.open_graph.image ? '' : 'hidden' }}>
+                    <div class="p-4">
+                        <span class="text-[0.68rem] font-black uppercase tracking-widest text-slate-400">Resultado base · Open Graph</span>
+                        <h3 class="mb-0 mt-2 text-lg font-black leading-tight text-slate-950" data-branding-preview-target="baseTitlePreview">{{ previews.open_graph.title }}</h3>
+                        <p class="mb-0 mt-2 line-clamp-2 text-sm leading-5 text-slate-600" data-branding-preview-target="baseDescriptionPreview">{{ previews.open_graph.description }}</p>
+                    </div>
+                </article>
+
+                <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+                    <img src="{{ previews.facebook.image }}" alt="Preview Facebook" class="h-36 w-full bg-slate-100 object-cover" data-branding-preview-target="facebookImagePreview" {{ previews.facebook.image ? '' : 'hidden' }}>
+                    <div class="border-t border-slate-100 bg-slate-50 p-4">
+                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-slate-500">mimonchis.mx · Facebook</span>
+                        <h3 class="mb-0 mt-1 text-base font-bold text-slate-950" data-branding-preview-target="facebookTitlePreview">{{ previews.facebook.title }}</h3>
+                        <p class="mb-0 mt-1 line-clamp-2 text-xs leading-5 text-slate-600" data-branding-preview-target="facebookDescriptionPreview">{{ previews.facebook.description }}</p>
+                    </div>
+                </article>
+
+                <article class="overflow-hidden rounded-3xl border border-slate-300 bg-black text-white shadow-lg">
+                    <img src="{{ previews.x_twitter.image }}" alt="Preview X" class="h-36 w-full bg-slate-900 object-cover" data-branding-preview-target="twitterImagePreview" {{ previews.x_twitter.image ? '' : 'hidden' }}>
+                    <div class="p-4">
+                        <span class="text-[0.68rem] font-bold text-slate-400">X / Twitter · mimonchis.mx</span>
+                        <h3 class="mb-0 mt-1 text-base font-bold" data-branding-preview-target="twitterTitlePreview">{{ previews.x_twitter.title }}</h3>
+                        <p class="mb-0 mt-1 line-clamp-2 text-xs leading-5 text-slate-300" data-branding-preview-target="twitterDescriptionPreview">{{ previews.x_twitter.description }}</p>
+                    </div>
+                </article>
+
+                <article class="rounded-3xl border border-slate-200 bg-white p-4 shadow-lg">
+                    <div class="flex gap-3">
+                        <img src="{{ current_config.logo_square_url }}" alt="Avatar Threads" class="h-10 w-10 rounded-full bg-slate-100 object-contain">
+                        <div class="min-w-0 flex-1">
+                            <span class="text-xs font-black text-slate-950">{{ current_config.app_name }}</span>
+                            <h3 class="mb-0 mt-2 text-sm font-bold text-slate-950" data-branding-preview-target="threadsTitlePreview">{{ previews.threads.title }}</h3>
+                            <p class="mb-0 mt-1 line-clamp-2 text-xs leading-5 text-slate-600" data-branding-preview-target="threadsDescriptionPreview">{{ previews.threads.description }}</p>
+                            <img src="{{ previews.threads.image }}" alt="Preview Threads" class="mt-3 h-32 w-full rounded-2xl bg-slate-100 object-cover" data-branding-preview-target="threadsImagePreview" {{ previews.threads.image ? '' : 'hidden' }}>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg">
+                    <span class="text-sm text-emerald-700">https://mimonchis.mx</span>
+                    <h3 class="mb-0 mt-1 text-xl font-medium text-blue-700" data-branding-preview-target="googleTitlePreview">{{ previews.google.title }}</h3>
+                    <p class="mb-0 mt-1 line-clamp-2 text-sm leading-5 text-slate-600" data-branding-preview-target="googleDescriptionPreview">{{ previews.google.description }}</p>
+                    <img src="{{ previews.google.image }}" alt="Preview Google" class="mt-3 h-24 w-full rounded-xl bg-slate-100 object-cover" data-branding-preview-target="googleImagePreview" {{ previews.google.image ? '' : 'hidden' }}>
+                </article>
+            </aside>
+        {{ form_end(form) }}
+    </div>
 {% endblock %}

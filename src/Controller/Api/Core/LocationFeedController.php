@@ -11,6 +11,7 @@ use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\PlaceCategoryRule;
 use App\Entity\Core\SystemPlugin;
 use App\Entity\Core\GooglePlaceBlacklist;
+use App\Service\PublicBrandingConfig;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +22,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class LocationFeedController extends AbstractController
 {
     #[Route('/api/v1/locations/feed', name: 'api_core_locations_feed', methods: ['GET'])]
-    public function __invoke(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function __invoke(Request $request, EntityManagerInterface $entityManager, PublicBrandingConfig $brandingConfig): JsonResponse
     {
         $locations = $entityManager->getRepository(MerchantLocation::class)->createQueryBuilder('location')
             ->leftJoin('location.merchant', 'merchant')->addSelect('merchant')
@@ -126,7 +127,7 @@ final class LocationFeedController extends AbstractController
                 'settings' => [
                     'map' => $this->mapSettings($entityManager),
                     'google_places_proxy' => $this->googlePlacesSettings($googlePlacesPlugin),
-                    'public_branding' => $this->publicBrandingSettings($entityManager),
+                    'public_branding' => $this->publicBrandingSettings($entityManager, $brandingConfig),
                 ],
                 'google_places_blacklist' => array_map(
                     static fn (GooglePlaceBlacklist $item): string => $item->getExternalSourceKey(),
@@ -248,42 +249,21 @@ final class LocationFeedController extends AbstractController
     /**
      * @return array<string, mixed>
      */
-    private function publicBrandingSettings(EntityManagerInterface $entityManager): array
+    private function publicBrandingSettings(EntityManagerInterface $entityManager, PublicBrandingConfig $brandingConfig): array
     {
-        $defaults = [
-            'app_name' => 'Mi Monchis',
-            'logo_horizontal_url' => '/images/branding/logo-simple-horizontal.png',
-            'logo_square_url' => '/images/branding/logo-simple-square.png',
-            'favicon_url' => '/favicon.ico',
-            'theme_color' => '#ff7a00',
-            'default_meta_title' => 'Mi Monchis MX',
-            'default_meta_description' => 'Explora locales cerca de ti con Mi Monchis MX.',
-            'social_share' => [
-                'default_og_title' => '',
-                'default_og_description' => '',
-                'default_og_image' => '',
-                'twitter_card_type' => 'summary_large_image',
-                'twitter_title' => '',
-                'twitter_description' => '',
-                'twitter_image' => '',
-                'facebook_title' => '',
-                'facebook_description' => '',
-                'facebook_image' => '',
-                'threads_title' => '',
-                'threads_description' => '',
-                'threads_image' => '',
-                'google_title' => '',
-                'google_description' => '',
-                'google_image' => '',
-            ]
-        ];
-
         try {
             $plugin = $entityManager->getRepository(SystemPlugin::class)->findOneBy(['pluginKey' => SystemPlugin::PUBLIC_BRANDING]);
+            $config = $brandingConfig->normalize($plugin instanceof SystemPlugin ? ($plugin->getConfigJson() ?? []) : []);
+            unset($config['asset_manifest']);
+            $config['resolved_social_share'] = $brandingConfig->resolvedPreviews($config);
 
-            return array_replace($defaults, $plugin instanceof SystemPlugin ? ($plugin->getConfigJson() ?? []) : []);
+            return $config;
         } catch (DbalException|\Throwable) {
-            return $defaults;
+            $config = $brandingConfig->normalize([]);
+            unset($config['asset_manifest']);
+            $config['resolved_social_share'] = $brandingConfig->resolvedPreviews($config);
+
+            return $config;
         }
     }
 
