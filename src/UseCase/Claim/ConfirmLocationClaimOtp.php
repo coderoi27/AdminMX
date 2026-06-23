@@ -60,8 +60,7 @@ final class ConfirmLocationClaimOtp
         }
 
         $reflection = new \ReflectionClass($claim);
-        $propEmailVerifiedAt = $reflection->getProperty('emailVerifiedAt');
-        $propEmailVerifiedAt->setValue($claim, new \DateTimeImmutable());
+        $claim->markEmailVerified();
 
         if ($this->stateMachine->canTransitionTo($claim->getStatus(), ClaimStateMachine::STATE_PENDING_EVIDENCE)) {
             $propStatus = $reflection->getProperty('status');

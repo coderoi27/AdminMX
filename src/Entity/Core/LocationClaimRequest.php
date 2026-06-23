@@ -411,4 +411,17 @@ class LocationClaimRequest
             self::STATUS_CONVERTED => [],
         ];
     }
+
+    public function getEmailVerifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->emailVerifiedAt;
+    }
+
+    public function markEmailVerified(
+        ?\DateTimeImmutable $dateTime = null,
+    ): self {
+        $this->emailVerifiedAt = $dateTime ?? new \DateTimeImmutable();
+
+        return $this;
+    }
 }
