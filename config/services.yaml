@@ -51,6 +51,8 @@ services:
         arguments:
             $provider: '%env(string:CLAIM_STORAGE_PROVIDER)%'
 
+    App\Domain\Claim\ClaimNotificationSenderInterface: '@App\Infrastructure\Notification\SymfonyMailerClaimNotificationSender'
+
     App\Command\Claim\R2SmokeTestCommand:
         arguments:
             $environment: '%kernel.environment%'
