@@ -40,7 +40,13 @@
                 {% for category in categories %}
                     <article style="display:grid; gap:0.8rem; border:1px solid #e5e7eb; border-radius:18px; padding:1rem 1.1rem; background:#fff;">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-                            <div>
+                            <div style="display:flex; align-items:flex-start; gap:0.85rem;">
+                                {% if category.iconAssetUrl %}
+                                    <img src="{{ category.iconAssetUrl }}" alt="Icono de {{ category.name }}" style="width:48px; height:48px; object-fit:contain; border-radius:16px; background:#f8fafc; border:1px solid #e5e7eb; padding:0.35rem;">
+                                {% else %}
+                                    <span style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:16px; background:{{ category.colorHex ?: '#F3F4F6' }}; color:{{ category.colorHex ? '#fff' : '#374151' }}; font-weight:900;">{{ category.name|slice(0, 1)|upper }}</span>
+                                {% endif %}
+                                <div>
                                 <div style="display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap;">
                                     <strong style="display:block; color:#111827; font-size:1.05rem;">{{ category.name }}</strong>
                                     <span style="display:inline-flex; align-items:center; border-radius:999px; padding:0.28rem 0.55rem; background:{{ category.colorHex ?: '#F3F4F6' }}; color:{{ category.colorHex ? '#ffffff' : '#374151' }}; font-size:0.74rem; font-weight:800;">
@@ -51,6 +57,7 @@
                                 <span style="display:block; margin-top:0.2rem; color:#94a3b8;">
                                     {{ category.featuredRegionScope ?: 'Sin región destacada' }} · {{ category.regionalStrategy ?: 'admin_curated' }}
                                 </span>
+                                </div>
                             </div>
                             <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                                 <span style="padding:0.32rem 0.65rem; border-radius:999px; background:{{ category.isActive ? '#dcfce7' : '#f3f4f6' }}; color:{{ category.isActive ? '#166534' : '#4b5563' }}; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ category.isActive ? 'activa' : 'inactiva' }}</span>

@@ -1,0 +1,19 @@
+{% set url = safe_public_url|default(null) %}
+{% set media_type = asset.mediaType %}
+{% if url %}
+    {% if media_type == 'video' %}
+        <video controls preload="metadata" muted style="width:100%; max-height:360px; border-radius:14px; background:#0f172a;">
+            <source src="{{ url|e('html_attr') }}" type="{{ asset.mimeType|e('html_attr') }}">
+        </video>
+    {% elseif media_type == 'icon' %}
+        <div style="display:flex; align-items:center; justify-content:center; min-height:180px; border:1px solid #e5e7eb; border-radius:14px; background:#f8fafc;">
+            <img src="{{ url|e('html_attr') }}" alt="{{ asset.altText|e('html_attr') }}" style="max-width:128px; max-height:128px; object-fit:contain;" loading="lazy">
+        </div>
+    {% else %}
+        <img src="{{ url|e('html_attr') }}" alt="{{ asset.altText|e('html_attr') }}" style="width:100%; max-height:420px; object-fit:cover; border-radius:14px; background:#f1f5f9;" loading="lazy">
+    {% endif %}
+{% else %}
+    <div style="display:flex; align-items:center; justify-content:center; min-height:180px; border:1px dashed #cbd5e1; border-radius:14px; color:#64748b; background:#f8fafc; font-weight:800;">
+        Sin preview público
+    </div>
+{% endif %}

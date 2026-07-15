@@ -1,15 +1,22 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}{{ page_title }} | Admin Mi Monchis MX{% endblock %}
+{% block header_title %}Categorías{% endblock %}
 
 {% block body %}
-    <main style="max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+    <main
+        data-controller="catalog-media-picker"
+        data-action="catalog-media-upload:completed@window->catalog-media-picker#uploadCompleted"
+        data-catalog-media-picker-assets-value="{{ catalog_media_assets|json_encode|e('html_attr') }}"
+        data-catalog-media-picker-category-slug-value="{{ category.slug ?? '' }}"
+        style="max-width: 1040px; margin: 0 auto; padding: 2rem 1.5rem; font-family: system-ui, sans-serif;"
+    >
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
             <div>
                 <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Alpha Admin</p>
                 <h1 style="margin:0; font-size:2rem; color:#111827;">{{ page_title }}</h1>
                 <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
-                    Alta o edición del catálogo que consumen el feed canónico, `Public` y el plugin demo.
+                    Las imágenes nuevas de categorías se seleccionan desde Biblioteca y se sirven desde assets.mimonchis.mx.
                 </p>
             </div>
             <a href="{{ path('admin_categories_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">
@@ -23,6 +30,18 @@
                 <ul style="margin:0; padding-left:1.1rem; line-height:1.7;">
                     {% for error in errors %}
                         <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        {% if legacy_asset_warnings is not empty %}
+            <section style="margin-top:1.25rem; border:1px solid #fed7aa; border-radius:16px; padding:1rem 1.1rem; background:#fff7ed; color:#9a3412;">
+                <strong style="display:block; margin-bottom:0.45rem;">Assets legacy detectados</strong>
+                <p style="margin:0 0 0.6rem; line-height:1.5;">Este asset utiliza almacenamiento legacy y debe sustituirse por un medio de Biblioteca.</p>
+                <ul style="margin:0; padding-left:1.1rem; line-height:1.6;">
+                    {% for warning in legacy_asset_warnings %}
+                        <li>{{ warning.slot }}: {{ warning.url }}</li>
                     {% endfor %}
                 </ul>
             </section>
@@ -43,6 +62,7 @@
                     <label style="display:grid; gap:0.45rem;">
                         <span style="font-weight:700; color:#111827;">icon_key</span>
                         <input type="text" name="icon_key" value="{{ category.iconKey ?? '' }}" placeholder="taco" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
+                        <small style="color:#64748b;">Identificador semántico opcional. No guarda archivos.</small>
                     </label>
                     <label style="display:grid; gap:0.45rem;">
                         <span style="font-weight:700; color:#111827;">color_hex</span>
@@ -51,14 +71,6 @@
                     <label style="display:grid; gap:0.45rem;">
                         <span style="font-weight:700; color:#111827;">Orden</span>
                         <input type="number" name="sort_order" value="{{ category.sortOrder ?? 0 }}" style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
-                    </label>
-                    <label style="display:grid; gap:0.45rem; grid-column:1 / -1;">
-                        <span style="font-weight:700; color:#111827;">Foto por default</span>
-                        <input type="text" name="default_photo_url" value="{{ category.defaultPhotoUrl ?? '' }}" placeholder="https://..." style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
-                    </label>
-                    <label style="display:grid; gap:0.45rem; grid-column:1 / -1;">
-                        <span style="font-weight:700; color:#111827;">Foto cover</span>
-                        <input type="text" name="cover_photo_url" value="{{ category.coverPhotoUrl ?? '' }}" placeholder="https://..." style="border:1px solid #d1d5db; border-radius:14px; padding:0.85rem 0.9rem;">
                     </label>
                     <label style="display:grid; gap:0.45rem;">
                         <span style="font-weight:700; color:#111827;">Estrategia regional</span>
@@ -79,6 +91,56 @@
                 </label>
             </section>
 
+            <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; display:grid; gap:1rem; background:#fff;">
+                <div>
+                    <h2 style="margin:0;">Medios singulares</h2>
+                    <p style="margin:0.35rem 0 0; color:#64748b;">Los medios seleccionados se servirán desde assets.mimonchis.mx.</p>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
+                    {% for slot, label in singular_slots %}
+                        <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem; display:grid; gap:0.85rem; background:#f8fafc;">
+                            <input type="hidden" name="catalog_media_singular[{{ slot }}]" value="{{ active_singular_asset_uuids[slot] ?? '' }}" data-singular-slot="{{ slot }}">
+                            <input type="hidden" name="catalog_media_singular_touched[{{ slot }}]" value="0" data-singular-touched-slot="{{ slot }}">
+                            <div>
+                                <strong style="display:block; color:#111827;">{{ label }}</strong>
+                                <span style="display:block; margin-top:0.2rem; color:#64748b; font-size:0.88rem;">{{ slot }}</span>
+                            </div>
+                            <div data-role="catalog-media-selection" data-slot="{{ slot }}" data-multiple="0" style="display:grid; gap:0.65rem;"></div>
+                            <div style="display:flex; gap:0.55rem; flex-wrap:wrap;">
+                                <button type="button" data-action="click->catalog-media-picker#open" data-slot="{{ slot }}" data-label="{{ label }}" data-multiple="0" style="border:none; border-radius:999px; padding:0.6rem 0.85rem; background:#111827; color:#fff; font-weight:800; cursor:pointer;">Elegir de Biblioteca</button>
+                                <button type="button" data-action="click->catalog-media-picker#openUpload" data-slot="{{ slot }}" data-label="{{ label }}" data-multiple="0" style="border:1px solid #111827; border-radius:999px; padding:0.6rem 0.85rem; background:#fff; color:#111827; font-weight:800; cursor:pointer;">Subir nuevo</button>
+                                <button type="button" data-action="click->catalog-media-picker#clear" data-slot="{{ slot }}" data-multiple="0" style="border:1px solid #d1d5db; border-radius:999px; padding:0.6rem 0.85rem; background:#fff; color:#374151; font-weight:800; cursor:pointer;">Quitar</button>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; display:grid; gap:1rem; background:#fff;">
+                <div>
+                    <h2 style="margin:0;">Pools por categoría</h2>
+                    <p style="margin:0.35rem 0 0; color:#64748b;">Solo se persiste la relación. Public seguirá usando campos legacy hasta resolved_media.</p>
+                </div>
+                {% for slot, label in pool_slots %}
+                    <article style="border:1px solid #e5e7eb; border-radius:16px; padding:1rem; display:grid; gap:0.85rem; background:#f8fafc;">
+                        <input type="hidden" name="catalog_media_pools[{{ slot }}]" value="{{ active_pool_asset_uuids[slot] ?? '' }}" data-pool-slot="{{ slot }}">
+                        <input type="hidden" name="catalog_media_pool_touched[{{ slot }}]" value="0" data-pool-touched-slot="{{ slot }}">
+                        <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                            <div>
+                                <strong style="display:block; color:#111827;">{{ label }}</strong>
+                                <span style="display:block; margin-top:0.2rem; color:#64748b; font-size:0.88rem;">{{ slot }}</span>
+                            </div>
+                            <div style="display:flex; gap:0.55rem; flex-wrap:wrap;">
+                                <button type="button" data-action="click->catalog-media-picker#open" data-slot="{{ slot }}" data-label="{{ label }}" data-multiple="1" style="border:none; border-radius:999px; padding:0.6rem 0.85rem; background:#111827; color:#fff; font-weight:800; cursor:pointer;">Elegir de Biblioteca</button>
+                                <button type="button" data-action="click->catalog-media-picker#openUpload" data-slot="{{ slot }}" data-label="{{ label }}" data-multiple="1" style="border:1px solid #111827; border-radius:999px; padding:0.6rem 0.85rem; background:#fff; color:#111827; font-weight:800; cursor:pointer;">Subir nuevo</button>
+                                <button type="button" data-action="click->catalog-media-picker#clear" data-slot="{{ slot }}" data-multiple="1" style="border:1px solid #d1d5db; border-radius:999px; padding:0.6rem 0.85rem; background:#fff; color:#374151; font-weight:800; cursor:pointer;">Vaciar pool</button>
+                            </div>
+                        </div>
+                        <div data-role="catalog-media-selection" data-slot="{{ slot }}" data-multiple="1" style="display:grid; gap:0.65rem;"></div>
+                    </article>
+                {% endfor %}
+            </section>
+
             <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
                 <button type="submit" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.7rem; border:none; border-radius:999px; padding:0.7rem 1.15rem; background:#111827; color:#fff; font-weight:700;">
                     {{ is_edit ? 'Guardar cambios' : 'Crear categoría' }}
@@ -88,5 +150,57 @@
                 </a>
             </div>
         </form>
+
+        <section
+            data-catalog-media-picker-target="dialog"
+            hidden
+            style="position:fixed; inset:0; z-index:50; background:rgba(15,23,42,0.45); padding:4vh 1rem; overflow:auto;"
+        >
+            <div style="max-width:980px; margin:0 auto; background:#fff; border-radius:18px; padding:1rem; display:grid; gap:1rem; box-shadow:0 24px 64px rgba(15,23,42,0.24);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
+                    <div>
+                        <p style="margin:0 0 0.3rem; color:#64748b; font-weight:800; font-size:0.82rem; text-transform:uppercase;">Biblioteca</p>
+                        <h2 data-catalog-media-picker-target="slotTitle" style="margin:0; color:#111827;">Seleccionar medio</h2>
+                    </div>
+                    <button type="button" data-action="click->catalog-media-picker#close" style="border:1px solid #d1d5db; border-radius:999px; padding:0.55rem 0.85rem; background:#fff; color:#374151; font-weight:800; cursor:pointer;">Cerrar</button>
+                </div>
+
+                <section
+                    data-catalog-media-picker-target="upload"
+                    data-controller="catalog-media-upload"
+                    data-catalog-media-upload-prepare-url-value="{{ path('admin_catalog_media_upload_prepare') }}"
+                    data-catalog-media-upload-complete-url-template-value="/catalog-media/uploads/__ASSET_UUID__/complete"
+                    data-catalog-media-upload-csrf-token-value="{{ csrf_token('catalog_media_upload') }}"
+                    data-catalog-media-upload-default-source-type-value="own"
+                    data-catalog-media-upload-category-slug-value="{{ category.slug ?? '' }}"
+                    style="border:1px solid #e5e7eb; border-radius:14px; padding:0.85rem; background:#f8fafc;"
+                >
+                    <div
+                        data-catalog-media-upload-target="dropzone"
+                        data-action="dragover->catalog-media-upload#dragOver dragleave->catalog-media-upload#dragLeave drop->catalog-media-upload#drop click->catalog-media-upload#openPicker"
+                        style="display:grid; place-items:center; min-height:6rem; border:2px dashed #cbd5e1; border-radius:14px; background:#fff; color:#334155; text-align:center; cursor:pointer;"
+                    >
+                        <div>
+                            <strong style="display:block; color:#111827;">Subir a Biblioteca</strong>
+                            <span style="display:block; margin-top:0.25rem; color:#64748b;">Se crea en R2 con contexto de esta categoría y slot.</span>
+                        </div>
+                    </div>
+                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" data-catalog-media-upload-target="fileInput" data-action="change->catalog-media-upload#selectFiles" hidden>
+                    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; margin-top:0.75rem;">
+                        <button type="button" data-action="click->catalog-media-upload#openPicker" style="border:none; border-radius:999px; padding:0.55rem 0.85rem; background:#111827; color:#fff; font-weight:800; cursor:pointer;">Subir archivos</button>
+                        <button type="button" data-action="click->catalog-media-upload#retryFailed" style="border:1px solid #d1d5db; border-radius:999px; padding:0.55rem 0.85rem; background:#fff; color:#374151; font-weight:800; cursor:pointer;">Reintentar fallidos</button>
+                        <span data-catalog-media-upload-target="summary" style="color:#64748b; font-weight:800;">Sin archivos en cola.</span>
+                    </div>
+                    <div data-catalog-media-upload-target="queue" style="display:grid; gap:0.75rem; margin-top:1rem;"></div>
+                </section>
+
+                <label style="display:grid; gap:0.35rem;">
+                    <span style="font-weight:800; color:#374151;">Buscar por título</span>
+                    <input type="search" data-catalog-media-picker-target="search" data-action="input->catalog-media-picker#filter" placeholder="Tacos, cover, story..." style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem;">
+                </label>
+
+                <div data-catalog-media-picker-target="grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:0.8rem; max-height:56vh; overflow:auto; padding-right:0.25rem;"></div>
+            </div>
+        </section>
     </main>
 {% endblock %}

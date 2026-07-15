@@ -1,0 +1,156 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Biblioteca de medios | Admin Mi Monchis MX{% endblock %}
+{% block header_title %}Biblioteca de medios{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1180px; margin: 0 auto; padding: 2.5rem 1.5rem; font-family: system-ui, sans-serif;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Catálogo público</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">Biblioteca de medios</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">
+                    Assets propios, stock/licenciados o IA para categorías, demos y fallbacks. Separado de evidencia Claim.
+                </p>
+            </div>
+            <a href="#catalog-media-upload" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.7rem 1.1rem; border:none; background:#111827; color:#fff; text-decoration:none; font-weight:800;">
+                Subir archivos
+            </a>
+        </div>
+
+        <section
+            id="catalog-media-upload"
+            data-controller="catalog-media-upload"
+            data-catalog-media-upload-prepare-url-value="{{ path('admin_catalog_media_upload_prepare') }}"
+            data-catalog-media-upload-complete-url-template-value="/catalog-media/uploads/__ASSET_UUID__/complete"
+            data-catalog-media-upload-csrf-token-value="{{ csrf_token('catalog_media_upload') }}"
+            data-catalog-media-upload-default-source-type-value="own"
+            data-catalog-media-upload-reload-on-complete-value="true"
+            style="margin-top:1.25rem; border:1px solid #d1d5db; border-radius:18px; padding:1rem; background:#fff;"
+        >
+            <div
+                data-catalog-media-upload-target="dropzone"
+                data-action="dragover->catalog-media-upload#dragOver dragleave->catalog-media-upload#dragLeave drop->catalog-media-upload#drop click->catalog-media-upload#openPicker"
+                style="display:grid; place-items:center; min-height:9rem; border:2px dashed #cbd5e1; border-radius:16px; background:#f8fafc; color:#334155; text-align:center; cursor:pointer;"
+            >
+                <div>
+                    <strong style="display:block; color:#111827;">Arrastra archivos o haz click para seleccionar</strong>
+                    <span style="display:block; margin-top:0.35rem; color:#64748b;">JPEG, PNG, WebP, MP4, WebM o QuickTime. SVG queda bloqueado hasta sanitización.</span>
+                </div>
+            </div>
+            <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" data-catalog-media-upload-target="fileInput" data-action="change->catalog-media-upload#selectFiles" hidden>
+            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; margin-top:0.9rem;">
+                <button type="button" data-action="click->catalog-media-upload#openPicker" style="border:none; border-radius:999px; padding:0.65rem 1rem; background:#111827; color:#fff; font-weight:800; cursor:pointer;">Subir archivos</button>
+                <button type="button" data-action="click->catalog-media-upload#retryFailed" style="border:1px solid #d1d5db; border-radius:999px; padding:0.65rem 1rem; background:#fff; color:#374151; font-weight:800; cursor:pointer;">Reintentar fallidos</button>
+                <span data-catalog-media-upload-target="summary" style="color:#64748b; font-weight:800;">Sin archivos en cola.</span>
+            </div>
+            <div data-catalog-media-upload-target="queue" style="display:grid; gap:0.75rem; margin-top:1rem;"></div>
+        </section>
+
+        <form method="get" style="margin-top:1.25rem; display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0.8rem; align-items:end; border:1px solid #e5e7eb; border-radius:18px; padding:1rem; background:#fff;">
+            <label style="display:grid; gap:0.35rem;">
+                <span style="font-weight:800; color:#374151; font-size:0.84rem;">Buscar</span>
+                <input name="q" value="{{ filters.q }}" placeholder="Título o filename" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem;">
+            </label>
+            <label style="display:grid; gap:0.35rem;">
+                <span style="font-weight:800; color:#374151; font-size:0.84rem;">Estado</span>
+                <select name="status" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem;">
+                    <option value="">Todos</option>
+                    {% for status in statuses %}
+                        <option value="{{ status }}" {{ filters.status == status ? 'selected' : '' }}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label style="display:grid; gap:0.35rem;">
+                <span style="font-weight:800; color:#374151; font-size:0.84rem;">Tipo</span>
+                <select name="media_type" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem;">
+                    <option value="">Todos</option>
+                    {% for media_type in media_types %}
+                        <option value="{{ media_type }}" {{ filters.media_type == media_type ? 'selected' : '' }}>{{ media_type }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label style="display:grid; gap:0.35rem;">
+                <span style="font-weight:800; color:#374151; font-size:0.84rem;">Origen</span>
+                <select name="source_type" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem;">
+                    <option value="">Todos</option>
+                    {% for source_type in source_types %}
+                        <option value="{{ source_type }}" {{ filters.source_type == source_type ? 'selected' : '' }}>{{ source_type }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label style="display:grid; gap:0.35rem;">
+                <span style="font-weight:800; color:#374151; font-size:0.84rem;">Derechos</span>
+                <select name="rights_verified" style="border:1px solid #d1d5db; border-radius:12px; padding:0.75rem;">
+                    <option value="">Todos</option>
+                    <option value="yes" {{ filters.rights_verified == 'yes' ? 'selected' : '' }}>Verificados</option>
+                    <option value="no" {{ filters.rights_verified == 'no' ? 'selected' : '' }}>Pendientes</option>
+                </select>
+            </label>
+            <button type="submit" style="border:none; border-radius:999px; padding:0.75rem 1rem; background:#111827; color:#fff; font-weight:800; cursor:pointer;">Filtrar</button>
+        </form>
+
+        <section style="margin-top:1.25rem; border:1px solid #e5e7eb; border-radius:18px; background:#fff; overflow:hidden;">
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead style="background:#f8fafc;">
+                    <tr>
+                        <th style="padding:1rem; font-size:0.78rem; color:#64748b; text-transform:uppercase;">Preview</th>
+                        <th style="padding:1rem; font-size:0.78rem; color:#64748b; text-transform:uppercase;">Medio</th>
+                        <th style="padding:1rem; font-size:0.78rem; color:#64748b; text-transform:uppercase;">Estado</th>
+                        <th style="padding:1rem; font-size:0.78rem; color:#64748b; text-transform:uppercase;">Derechos</th>
+                        <th style="padding:1rem; font-size:0.78rem; color:#64748b; text-transform:uppercase;">Técnico</th>
+                        <th style="padding:1rem; font-size:0.78rem; color:#64748b; text-transform:uppercase; text-align:right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                        <tr style="border-top:1px solid #f1f5f9;">
+                            <td style="padding:1rem; width:96px;">
+                                <div style="width:72px; height:54px; border-radius:10px; overflow:hidden; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:0.72rem; font-weight:800;">
+                                    {% if preview_urls[asset.id] is defined and asset.mediaType != 'video' %}
+                                        <img src="{{ preview_urls[asset.id]|e('html_attr') }}" alt="" style="width:100%; height:100%; object-fit:cover;" loading="lazy">
+                                    {% else %}
+                                        {{ asset.mediaType }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td style="padding:1rem;">
+                                <strong style="display:block; color:#111827;">{{ asset.title ?: 'Sin título' }}</strong>
+                                <span style="display:block; color:#64748b; margin-top:0.2rem; font-size:0.84rem;">{{ asset.originalFilename ?: 'Sin filename' }}</span>
+                                <span style="display:inline-flex; margin-top:0.4rem; border-radius:999px; padding:0.25rem 0.55rem; background:#eff6ff; color:#1d4ed8; font-size:0.75rem; font-weight:800;">{{ asset.mediaType }}</span>
+                                <span style="display:inline-flex; margin-top:0.4rem; border-radius:999px; padding:0.25rem 0.55rem; background:#f8fafc; color:#334155; font-size:0.75rem; font-weight:800;">{{ asset.sourceType }}</span>
+                            </td>
+                            <td style="padding:1rem;">
+                                <span style="display:block; font-weight:800; color:#111827;">{{ asset.status }}</span>
+                                <span style="display:block; color:#64748b; font-size:0.84rem;">{{ asset.moderationStatus }}</span>
+                            </td>
+                            <td style="padding:1rem;">
+                                <span style="display:inline-flex; border-radius:999px; padding:0.28rem 0.6rem; background:{{ asset.rightsVerified ? '#dcfce7' : '#fef3c7' }}; color:{{ asset.rightsVerified ? '#166534' : '#92400e' }}; font-size:0.78rem; font-weight:800;">
+                                    {{ asset.rightsVerified ? 'Verificados' : 'Pendientes' }}
+                                </span>
+                            </td>
+                            <td style="padding:1rem; color:#334155; font-size:0.86rem;">
+                                <span style="display:block;">{{ asset.bytes|number_format(0, '.', ',') }} bytes</span>
+                                <span style="display:block;">{% if asset.width and asset.height %}{{ asset.width }} x {{ asset.height }}{% elseif asset.durationSeconds %}{{ asset.durationSeconds }} s{% else %}Sin dimensiones{% endif %}</span>
+                                <span style="display:block;">{{ asset.createdAt|date('Y-m-d H:i') }}</span>
+                            </td>
+                            <td style="padding:1rem;">
+                                <div style="display:flex; justify-content:flex-end; gap:0.45rem; flex-wrap:wrap;">
+                                    <a href="{{ path('admin_catalog_media_show', {id: asset.id}) }}" style="border:1px solid #d1d5db; border-radius:999px; padding:0.45rem 0.75rem; color:#374151; text-decoration:none; font-weight:800;">Ver</a>
+                                    <a href="{{ path('admin_catalog_media_edit', {id: asset.id}) }}" style="border:1px solid #d1d5db; border-radius:999px; padding:0.45rem 0.75rem; color:#374151; text-decoration:none; font-weight:800;">Editar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" style="padding:2.5rem; text-align:center; color:#64748b;">
+                                <strong style="display:block; color:#111827; font-size:1rem;">Todavía no hay medios en la biblioteca.</strong>
+                                <a href="#catalog-media-upload" style="display:inline-flex; margin-top:1rem; border-radius:999px; padding:0.65rem 1rem; background:#111827; color:#fff; text-decoration:none; font-weight:800;">Subir archivos</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+{% endblock %}

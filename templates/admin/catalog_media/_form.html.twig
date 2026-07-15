@@ -1,0 +1,135 @@
+{% set action = is_edit ? path('admin_catalog_media_edit', {id: asset.id}) : path('admin_catalog_media_new') %}
+{% set token = is_edit ? csrf_token('edit_catalog_media_asset_' ~ asset.id) : csrf_token('create_catalog_media_asset') %}
+
+<form method="post" action="{{ action }}" style="display:grid; gap:1rem;">
+    <input type="hidden" name="_token" value="{{ token }}">
+    <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem;">
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Título</span>
+            <input name="title" value="{{ asset.title }}" required style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Alt text</span>
+            <input name="alt_text" value="{{ asset.altText }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Filename original</span>
+            <input name="original_filename" value="{{ asset.originalFilename }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Tipo</span>
+            <select name="media_type" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+                {% for media_type in media_types %}
+                    <option value="{{ media_type }}" {{ asset.mediaType == media_type ? 'selected' : '' }}>{{ media_type }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">MIME</span>
+            <input name="mime_type" value="{{ asset.mimeType }}" placeholder="image/jpeg" required style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Bytes</span>
+            <input type="number" min="0" name="bytes" value="{{ asset.bytes }}" required style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Ancho</span>
+            <input type="number" min="0" name="width" value="{{ asset.width }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Alto</span>
+            <input type="number" min="0" name="height" value="{{ asset.height }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Duración segundos</span>
+            <input type="number" min="0" name="duration_seconds" value="{{ asset.durationSeconds }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+    </section>
+
+    <section style="display:grid; gap:1rem;">
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Descripción</span>
+            <textarea name="description" rows="3" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">{{ asset.description }}</textarea>
+        </label>
+        <section style="display:grid; gap:0.45rem; border:1px solid #bbf7d0; border-radius:14px; padding:0.9rem; background:#f0fdf4;">
+            <strong style="color:#166534;">Moderación: aprobada por carga administrativa</strong>
+            <span style="color:#166534;">CatalogMedia es curado por Admin. La revisión manual queda separada para medios de usuarios y ReviewMedia.</span>
+        </section>
+        {% if is_edit %}
+            <section style="display:grid; gap:0.45rem; border:1px solid #e5e7eb; border-radius:14px; padding:0.9rem; background:#f8fafc;">
+                <strong style="color:#111827;">Storage confirmado</strong>
+                <span style="color:#64748b; overflow-wrap:anywhere;">Provider: {{ asset.storageProvider ?: 'local_catalog_media' }}</span>
+                <span style="color:#64748b; overflow-wrap:anywhere;">Public URL: {{ asset.publicUrl ?: 'Pendiente de confirmación' }}</span>
+                <span style="color:#64748b; font-family:monospace; overflow-wrap:anywhere;">Object key protegido: {{ asset.objectKey ? asset.objectKey|slice(0, 14) ~ '/...' ~ asset.objectKey|slice(-8) : 'Pendiente de upload' }}</span>
+                <span style="color:#64748b;">Estado actual: <strong>{{ asset.status }}</strong></span>
+            </section>
+        {% endif %}
+    </section>
+
+    <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem;">
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Origen</span>
+            <select name="source_type" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+                {% for source_type in source_types %}
+                    <option value="{{ source_type }}" {{ asset.sourceType == source_type ? 'selected' : '' }}>{{ source_type }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Autor</span>
+            <input name="author" value="{{ asset.author }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Source URL</span>
+            <input type="url" name="source_url" value="{{ asset.sourceUrl }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Licencia</span>
+            <input name="license_name" value="{{ asset.licenseName }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">AI tool</span>
+            <input name="ai_tool" value="{{ asset.aiTool }}" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">
+        </label>
+    </section>
+
+    <section style="display:grid; gap:0.8rem;">
+        <label style="display:grid; gap:0.45rem;">
+            <span style="font-weight:800; color:#111827;">Atribución</span>
+            <textarea name="attribution" rows="3" style="border:1px solid #d1d5db; border-radius:12px; padding:0.8rem;">{{ asset.attribution }}</textarea>
+        </label>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#374151; font-weight:800;">
+            <label style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="checkbox" name="rights_verified" value="1" {{ asset.rightsVerified ? 'checked' : '' }}>
+                Tengo evidencia de que Mi Monchis puede utilizar este archivo.
+            </label>
+            <label style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="checkbox" name="ai_generated" value="1" {{ asset.aiGenerated ? 'checked' : '' }}>
+                Generado por IA
+            </label>
+        </div>
+        {% if activation_requirements is not empty %}
+            <section style="display:grid; gap:0.45rem; border:1px solid #fde68a; border-radius:14px; padding:0.9rem; background:#fffbeb; color:#92400e;">
+                <strong>Requisitos faltantes para activar automáticamente</strong>
+                <ul style="margin:0; padding-left:1.1rem; line-height:1.55;">
+                    {% for requirement in activation_requirements %}
+                        <li>{{ requirement }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% else %}
+            <section style="border:1px solid #bbf7d0; border-radius:14px; padding:0.9rem; background:#f0fdf4; color:#166534; font-weight:800;">
+                Al guardar, el archivo quedará activo.
+            </section>
+        {% endif %}
+    </section>
+
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <button type="submit" style="border:none; border-radius:999px; padding:0.75rem 1.2rem; background:#111827; color:#fff; font-weight:800; cursor:pointer;">
+            {{ is_edit ? 'Guardar cambios' : 'Agregar medio' }}
+        </button>
+        <a href="{{ is_edit ? path('admin_catalog_media_show', {id: asset.id}) : path('admin_catalog_media_index') }}" style="display:inline-flex; align-items:center; border:1px solid #d1d5db; border-radius:999px; padding:0.75rem 1.2rem; color:#374151; text-decoration:none; font-weight:800;">
+            Cancelar
+        </a>
+    </div>
+</form>

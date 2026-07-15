@@ -27,6 +27,9 @@ class LocationCategory
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $iconKey = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $iconAssetUrl = null;
+
     #[ORM\Column(length: 7, nullable: true)]
     private ?string $colorHex = null;
 
@@ -116,6 +119,18 @@ class LocationCategory
     public function setIconKey(?string $iconKey): self
     {
         $this->iconKey = $iconKey !== null && trim($iconKey) !== '' ? trim($iconKey) : null;
+
+        return $this;
+    }
+
+    public function getIconAssetUrl(): ?string
+    {
+        return $this->iconAssetUrl;
+    }
+
+    public function setIconAssetUrl(?string $iconAssetUrl): self
+    {
+        $this->iconAssetUrl = $iconAssetUrl !== null && trim($iconAssetUrl) !== '' ? trim($iconAssetUrl) : null;
 
         return $this;
     }

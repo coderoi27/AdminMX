@@ -21,6 +21,7 @@
     <body class="antialiased text-gray-800">
         <!-- Sidebar -->
         {% if app.user %}
+        {% set current_route = app.request.attributes.get('_route') ?? '' %}
         <aside class="fixed top-0 left-0 h-screen w-64 glass-panel border-r border-white/40 z-20 flex flex-col">
             <div class="h-16 flex items-center px-6 border-b border-white/20">
                 <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Mi Monchis</span>
@@ -30,6 +31,7 @@
                 <a href="{{ path('admin_dashboard') }}" class="block px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors font-medium text-gray-700">Dashboard</a>
                 <a href="{{ path('admin_locations_index') }}" class="block px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors font-medium text-gray-700">Locales</a>
                 <a href="{{ path('admin_categories_index') }}" class="block px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors font-medium text-gray-700">Categorías</a>
+                <a href="{{ path('admin_catalog_media_index') }}" class="block px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors font-medium {{ current_route starts with 'admin_catalog_media_' ? 'bg-white/70 text-gray-950' : 'text-gray-700' }}">Biblioteca de medios</a>
                 <div class="pt-4 mt-4 border-t border-white/20">
                     <p class="px-3 text-[0.7rem] font-bold text-gray-400 uppercase tracking-wider mb-2">Configuración global</p>
                     <a href="{{ path('admin_system_settings_index') }}" class="block px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors font-medium text-gray-700">Sistema y Mapa</a>

@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ asset.title }} | Biblioteca de medios{% endblock %}
+{% block header_title %}Biblioteca de medios{% endblock %}
+
+{% block body %}
+    <main style="max-width: 1120px; margin: 0 auto; padding: 2.5rem 1.5rem; font-family: system-ui, sans-serif;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Catálogo público</p>
+                <h1 style="margin:0; font-size:2rem; color:#111827;">{{ asset.title ?: 'Medio sin título' }}</h1>
+                <p style="margin:0.6rem 0 0; color:#4b5563; line-height:1.6;">{{ asset.altText ?: 'Sin alt text' }}</p>
+            </div>
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                <a href="{{ path('admin_catalog_media_edit', {id: asset.id}) }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:800;">Editar</a>
+                <a href="{{ path('admin_catalog_media_index') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:800;">Volver</a>
+            </div>
+        </div>
+
+        <section style="margin-top:1.25rem; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(280px,0.8fr); gap:1rem;">
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1rem; background:#fff;">
+                {% include 'admin/catalog_media/_preview.html.twig' with {asset: asset, safe_public_url: safe_public_url} %}
+            </article>
+            <aside style="border:1px solid #e5e7eb; border-radius:18px; padding:1rem; background:#fff;">
+                <h2 style="margin:0 0 0.85rem; font-size:1rem; color:#111827;">Estado operativo</h2>
+                <dl style="display:grid; gap:0.7rem; margin:0;">
+                    <div><dt style="font-size:0.75rem; color:#64748b; font-weight:800; text-transform:uppercase;">Status</dt><dd style="margin:0.2rem 0 0; color:#111827; font-weight:800;">{% if asset.status == 'active' %}<span style="display:inline-flex; border-radius:999px; padding:0.28rem 0.6rem; background:#dcfce7; color:#166534;">Activo</span>{% else %}{{ asset.status }}{% endif %}</dd></div>
+                    <div><dt style="font-size:0.75rem; color:#64748b; font-weight:800; text-transform:uppercase;">Moderación</dt><dd style="margin:0.2rem 0 0; color:#111827; font-weight:800;">Aprobada por carga administrativa</dd></div>
+                    <div><dt style="font-size:0.75rem; color:#64748b; font-weight:800; text-transform:uppercase;">Derechos</dt><dd style="margin:0.2rem 0 0; color:{{ asset.rightsVerified ? '#166534' : '#92400e' }}; font-weight:800;">{{ asset.rightsVerified ? 'Verificados' : 'Pendientes' }}</dd></div>
+                    <div><dt style="font-size:0.75rem; color:#64748b; font-weight:800; text-transform:uppercase;">Object key protegido</dt><dd style="margin:0.2rem 0 0; color:#334155; font-family:monospace;">{{ masked_object_key }}</dd></div>
+                    <div><dt style="font-size:0.75rem; color:#64748b; font-weight:800; text-transform:uppercase;">Public URL</dt><dd style="margin:0.2rem 0 0; color:#334155; overflow-wrap:anywhere;">{{ safe_public_url ?: 'No disponible o URL firmada bloqueada' }}</dd></div>
+                </dl>
+                {% if activation_requirements is not empty and asset.status != 'active' %}
+                    <section style="margin-top:1rem; border:1px solid #fde68a; border-radius:14px; padding:0.9rem; background:#fffbeb; color:#92400e;">
+                        <strong style="display:block; margin-bottom:0.4rem;">Requisitos faltantes</strong>
+                        <ul style="margin:0; padding-left:1.1rem; line-height:1.55;">
+                            {% for requirement in activation_requirements %}
+                                <li>{{ requirement }}</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                {% endif %}
+                <div style="display:flex; gap:0.55rem; flex-wrap:wrap; margin-top:1rem;">
+                    {% if asset.status == 'archived' and activation_requirements is empty %}
+                        <form method="post" action="{{ path('admin_catalog_media_activate', {id: asset.id}) }}" style="margin:0;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('activate_catalog_media_asset_' ~ asset.id) }}">
+                            <button type="submit" style="border:none; border-radius:999px; padding:0.55rem 0.85rem; background:#15803d; color:#fff; font-weight:800; cursor:pointer;">Reactivar</button>
+                        </form>
+                    {% elseif asset.status != 'active' %}
+                        <span style="display:inline-flex; align-items:center; border-radius:999px; padding:0.55rem 0.85rem; background:#fef3c7; color:#92400e; font-weight:800;">Completa requisitos para activar</span>
+                    {% endif %}
+                    {% if asset.status == 'active' %}
+                        <form method="post" action="{{ path('admin_catalog_media_archive', {id: asset.id}) }}" style="margin:0;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('archive_catalog_media_asset_' ~ asset.id) }}">
+                            <button type="submit" style="border:1px solid #d1d5db; border-radius:999px; padding:0.55rem 0.85rem; background:#fff; color:#374151; font-weight:800; cursor:pointer;">Archivar</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </aside>
+        </section>
+
+        <section style="margin-top:1rem; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1rem; background:#fff;">
+                <h2 style="margin:0 0 0.85rem; font-size:1rem; color:#111827;">Metadata técnica</h2>
+                <dl style="display:grid; gap:0.6rem; margin:0; color:#334155;">
+                    <div><dt style="font-weight:800;">Tipo</dt><dd style="margin:0.15rem 0 0;">{{ asset.mediaType }} · {{ asset.mimeType }}</dd></div>
+                    <div><dt style="font-weight:800;">Tamaño</dt><dd style="margin:0.15rem 0 0;">{{ asset.bytes|number_format(0, '.', ',') }} bytes</dd></div>
+                    <div><dt style="font-weight:800;">Dimensiones/duración</dt><dd style="margin:0.15rem 0 0;">{% if asset.width and asset.height %}{{ asset.width }} x {{ asset.height }}{% elseif asset.durationSeconds %}{{ asset.durationSeconds }} s{% else %}Sin datos{% endif %}</dd></div>
+                    <div><dt style="font-weight:800;">Storage</dt><dd style="margin:0.15rem 0 0;">{{ asset.storageProvider }}</dd></div>
+                    <div><dt style="font-weight:800;">Checksum</dt><dd style="margin:0.15rem 0 0; font-family:monospace;">{{ asset.checksum ?: 'Sin checksum' }}</dd></div>
+                </dl>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1rem; background:#fff;">
+                <h2 style="margin:0 0 0.85rem; font-size:1rem; color:#111827;">Licencia y origen</h2>
+                <dl style="display:grid; gap:0.6rem; margin:0; color:#334155;">
+                    <div><dt style="font-weight:800;">Source type</dt><dd style="margin:0.15rem 0 0;">{{ asset.sourceType }}</dd></div>
+                    <div><dt style="font-weight:800;">Autor</dt><dd style="margin:0.15rem 0 0;">{{ asset.author ?: 'Sin autor registrado' }}</dd></div>
+                    <div><dt style="font-weight:800;">Source URL</dt><dd style="margin:0.15rem 0 0; overflow-wrap:anywhere;">{{ asset.sourceUrl ?: 'Sin URL de origen' }}</dd></div>
+                    <div><dt style="font-weight:800;">Licencia</dt><dd style="margin:0.15rem 0 0;">{{ asset.licenseName ?: 'Sin licencia registrada' }}</dd></div>
+                    <div><dt style="font-weight:800;">Atribución</dt><dd style="margin:0.15rem 0 0;">{{ asset.attribution ?: 'Sin atribución' }}</dd></div>
+                    <div><dt style="font-weight:800;">IA</dt><dd style="margin:0.15rem 0 0;">{{ asset.aiGenerated ? 'Sí' : 'No' }}{% if asset.aiTool %} · {{ asset.aiTool }}{% endif %}</dd></div>
+                </dl>
+            </article>
+            <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1rem; background:#fff;">
+                <h2 style="margin:0 0 0.85rem; font-size:1rem; color:#111827;">Uso en catálogo</h2>
+                <p style="margin:0; color:#64748b; line-height:1.55;">
+                    La relación con categorías, pools, tags y álbumes queda preparada en el modelo. La UI de asignación se implementará en el bloque siguiente.
+                </p>
+            </article>
+        </section>
+    </main>
+{% endblock %}
