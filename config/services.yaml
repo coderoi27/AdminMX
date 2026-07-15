@@ -6,6 +6,16 @@
 parameters:
     app.locals_core_sync_token: '%env(default::LOCALS_CORE_SYNC_TOKEN)%'
     default_claim_resume_token_ttl: 86400
+    env(CATALOG_MEDIA_STORAGE_PROVIDER): 'local'
+    env(CATALOG_MEDIA_R2_ENDPOINT): ''
+    env(CATALOG_MEDIA_R2_REGION): 'auto'
+    env(CATALOG_MEDIA_R2_BUCKET): ''
+    env(CATALOG_MEDIA_R2_ACCESS_KEY_ID): ''
+    env(CATALOG_MEDIA_R2_SECRET_ACCESS_KEY): ''
+    env(CATALOG_MEDIA_PUBLIC_BASE_URL): '/media'
+    env(CATALOG_MEDIA_UPLOAD_URL_TTL): '900'
+    env(CATALOG_MEDIA_MAX_IMAGE_BYTES): '5242880'
+    env(CATALOG_MEDIA_MAX_VIDEO_BYTES): '52428800'
 
 services:
     # default configuration for services in *this* file
@@ -54,6 +64,30 @@ services:
             $provider: '%env(string:CLAIM_STORAGE_PROVIDER)%'
 
     App\Domain\Claim\ClaimNotificationSenderInterface: '@App\Infrastructure\Notification\SymfonyMailerClaimNotificationSender'
+
+    App\Infrastructure\Storage\LocalCatalogMediaStorage:
+        arguments:
+            $publicBaseUrl: '%env(string:CATALOG_MEDIA_PUBLIC_BASE_URL)%'
+            $uploadUrlTtl: '%env(int:CATALOG_MEDIA_UPLOAD_URL_TTL)%'
+            $maxImageBytes: '%env(int:CATALOG_MEDIA_MAX_IMAGE_BYTES)%'
+            $maxVideoBytes: '%env(int:CATALOG_MEDIA_MAX_VIDEO_BYTES)%'
+
+    App\Infrastructure\Storage\CloudflareR2CatalogMediaStorage:
+        arguments:
+            $endpoint: '%env(string:CATALOG_MEDIA_R2_ENDPOINT)%'
+            $region: '%env(string:CATALOG_MEDIA_R2_REGION)%'
+            $bucketName: '%env(string:CATALOG_MEDIA_R2_BUCKET)%'
+            $accessKeyId: '%env(string:CATALOG_MEDIA_R2_ACCESS_KEY_ID)%'
+            $secretAccessKey: '%env(string:CATALOG_MEDIA_R2_SECRET_ACCESS_KEY)%'
+            $publicBaseUrl: '%env(string:CATALOG_MEDIA_PUBLIC_BASE_URL)%'
+            $uploadUrlTtl: '%env(int:CATALOG_MEDIA_UPLOAD_URL_TTL)%'
+            $maxImageBytes: '%env(int:CATALOG_MEDIA_MAX_IMAGE_BYTES)%'
+            $maxVideoBytes: '%env(int:CATALOG_MEDIA_MAX_VIDEO_BYTES)%'
+
+    App\Domain\CatalogMedia\CatalogMediaStorageInterface:
+        factory: ['App\Infrastructure\Storage\CatalogMediaStorageFactory', 'create']
+        arguments:
+            $provider: '%env(string:CATALOG_MEDIA_STORAGE_PROVIDER)%'
 
     App\Command\Claim\R2SmokeTestCommand:
         arguments:
