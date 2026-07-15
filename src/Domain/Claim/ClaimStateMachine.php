@@ -9,8 +9,8 @@ use App\Entity\Core\LocationClaimRequest;
 final class ClaimStateMachine
 {
     public const STATE_DRAFT = 'draft';
-    public const STATE_PENDING_EMAIL_VERIFICATION = 'pending_email_verification';
-    public const STATE_PENDING_EVIDENCE = 'pending_evidence';
+    public const STATE_PENDING_EMAIL_VERIFICATION = LocationClaimRequest::STATUS_PENDING_EMAIL_VERIFICATION;
+    public const STATE_PENDING_EVIDENCE = LocationClaimRequest::STATUS_PENDING_EVIDENCE;
     public const STATE_SUBMITTED = LocationClaimRequest::STATUS_SUBMITTED;
     public const STATE_UNDER_REVIEW = LocationClaimRequest::STATUS_UNDER_REVIEW;
     public const STATE_NEEDS_INFO = 'needs_info';

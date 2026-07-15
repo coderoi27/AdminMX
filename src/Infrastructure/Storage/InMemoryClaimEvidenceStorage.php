@@ -24,6 +24,9 @@ final class InMemoryClaimEvidenceStorage implements ClaimEvidenceStorageInterfac
 
         return [
             'upload_url' => 'https://fake-storage.local/upload/' . $objectKey,
+            'expires_in_seconds' => 900,
+            'max_bytes' => str_starts_with($mimeType, 'video/') ? 78643200 : 10485760,
+            'accepted_mime_types' => ['video/webm', 'video/mp4', 'video/quicktime', 'application/pdf', 'image/jpeg', 'image/png'],
             'object_key' => $objectKey,
             'storage_provider' => 'in_memory',
             'bucket_name' => 'fake_bucket',

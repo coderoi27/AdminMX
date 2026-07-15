@@ -1,5 +1,7 @@
 <p>Hola,</p>
-<p>Hemos recibido correctamente tu solicitud de reclamación para el local <strong>{{ location_name }}</strong>.</p>
-<p>Nuestro equipo de soporte revisará la información y la evidencia que proporcionaste. Te notificaremos por este medio cuando la reclamación sea aprobada o si necesitamos información adicional.</p>
-<p>Referencia de solicitud: {{ claim_uuid }}</p>
+<p>Recibimos tu solicitud para administrar <strong>{{ location_name }}</strong>.</p>
+<p>Estado: Recibida{% if submitted_at %} el {{ submitted_at|date('d/m/Y H:i') }}{% endif %}.</p>
+<p>Folio: {{ public_reference }}</p>
+<p>Nuestro equipo revisará la información y la evidencia de forma humana. Enviar la solicitud no garantiza aprobación; te contactaremos por este medio si necesitamos información adicional.</p>
+<p>Puedes volver a Mi Monchis MX desde <a href="{{ public_base_url }}">{{ public_base_url }}</a>.</p>
 <p>El equipo de Mi Monchis MX</p>

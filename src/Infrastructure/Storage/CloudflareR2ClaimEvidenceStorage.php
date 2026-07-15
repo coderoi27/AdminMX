@@ -68,8 +68,16 @@ final class CloudflareR2ClaimEvidenceStorage implements ClaimEvidenceStorageInte
         $extension = self::MIME_TO_EXT[$mimeType];
         $evidenceUuid = Uuid::v4()->toRfc4122();
         
-        // Key format: claims/{claim_uuid}/evidence/{evidence_uuid}/original.{extension}
-        $objectKey = sprintf('claims/%s/evidence/%s/original.%s', $claimUuid, $evidenceUuid, $extension);
+        $now = new \DateTimeImmutable();
+        // Private Claim evidence prefix. It intentionally avoids claimant email, local name and public media paths.
+        $objectKey = sprintf(
+            'claim-evidence/%s/%s/%s/%s/original.%s',
+            $now->format('Y'),
+            $now->format('m'),
+            $claimUuid,
+            $evidenceUuid,
+            $extension
+        );
 
         try {
             $cmd = $this->s3Client->getCommand('PutObject', [
@@ -82,16 +90,19 @@ final class CloudflareR2ClaimEvidenceStorage implements ClaimEvidenceStorageInte
 
             $this->logger->info('Prepared R2 upload', [
                 'claim_uuid' => $claimUuid,
-                'object_key' => $objectKey,
+                'object_key_hash' => $this->objectKeyHash($objectKey),
                 'expires_in' => $this->uploadTtl
             ]);
 
             return [
                 'upload_url' => (string) $request->getUri(),
+                'expires_in_seconds' => $this->uploadTtl,
                 'expires_at' => (new \DateTimeImmutable(sprintf('+%d seconds', $this->uploadTtl)))->format(\DateTimeInterface::ATOM),
                 'required_headers' => [
                     'Content-Type' => $mimeType,
                 ],
+                'max_bytes' => $maxBytes,
+                'accepted_mime_types' => array_keys(self::MIME_TO_EXT),
                 'object_key' => $objectKey,
                 'storage_provider' => 'cloudflare_r2',
                 'bucket_name' => $this->bucketName,
@@ -110,7 +121,7 @@ final class CloudflareR2ClaimEvidenceStorage implements ClaimEvidenceStorageInte
                 'Key' => $objectKey,
             ]);
 
-            $this->logger->info('Inspected R2 object', ['object_key' => $objectKey]);
+            $this->logger->info('Inspected R2 object', ['object_key_hash' => $this->objectKeyHash($objectKey)]);
 
             return [
                 'object_key' => $objectKey,
@@ -123,10 +134,10 @@ final class CloudflareR2ClaimEvidenceStorage implements ClaimEvidenceStorageInte
             ];
         } catch (AwsException $e) {
             if ($e->getAwsErrorCode() === 'NotFound' || $e->getStatusCode() === 404) {
-                throw new ClaimObjectNotFoundException(sprintf('Object %s not found in R2.', $objectKey));
+                throw new ClaimObjectNotFoundException('Evidence object not found in R2.');
             }
             
-            $this->logger->error('Failed to inspect R2 object', ['object_key' => $objectKey, 'exception' => $e->getMessage()]);
+            $this->logger->error('Failed to inspect R2 object', ['object_key_hash' => $this->objectKeyHash($objectKey), 'exception_class' => $e::class]);
             throw new ClaimStorageUnavailableException('Could not communicate with Cloudflare R2.');
         }
     }
@@ -143,11 +154,11 @@ final class CloudflareR2ClaimEvidenceStorage implements ClaimEvidenceStorageInte
 
             $request = $this->s3Client->createPresignedRequest($cmd, sprintf('+%d seconds', $ttl));
             
-            $this->logger->info('Created R2 read URL', ['object_key' => $objectKey]);
+            $this->logger->info('Created R2 read URL', ['object_key_hash' => $this->objectKeyHash($objectKey)]);
 
             return (string) $request->getUri();
         } catch (AwsException $e) {
-            $this->logger->error('Failed to create R2 read URL', ['object_key' => $objectKey, 'exception' => $e->getMessage()]);
+            $this->logger->error('Failed to create R2 read URL', ['object_key_hash' => $this->objectKeyHash($objectKey), 'exception_class' => $e::class]);
             throw new ClaimStorageUnavailableException('Could not communicate with Cloudflare R2.');
         }
     }
@@ -160,10 +171,15 @@ final class CloudflareR2ClaimEvidenceStorage implements ClaimEvidenceStorageInte
                 'Key' => $objectKey,
             ]);
             
-            $this->logger->info('Deleted R2 object', ['object_key' => $objectKey]);
+            $this->logger->info('Deleted R2 object', ['object_key_hash' => $this->objectKeyHash($objectKey)]);
         } catch (AwsException $e) {
-            $this->logger->error('Failed to delete R2 object', ['object_key' => $objectKey, 'exception' => $e->getMessage()]);
+            $this->logger->error('Failed to delete R2 object', ['object_key_hash' => $this->objectKeyHash($objectKey), 'exception_class' => $e::class]);
             throw new ClaimStorageUnavailableException('Could not communicate with Cloudflare R2.');
         }
+    }
+
+    private function objectKeyHash(string $objectKey): string
+    {
+        return substr(hash('sha256', $objectKey), 0, 16);
     }
 }

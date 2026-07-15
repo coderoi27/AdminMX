@@ -21,8 +21,12 @@ final class ClaimAccessTokenAuthenticator extends AbstractAuthenticator
     private ClaimAccessSessionManager $sessionManager;
 
     private const PROTECTED_ROUTES = [
+        'api_core_claim_show' => 'claim:write',
         'api_core_claim_progress' => 'claim:write',
-        'api_core_claim_evidence_prepare' => 'claim:evidence',
+        'api_core_claim_otp_request' => 'claim:write',
+        'api_core_claim_otp_confirm' => 'claim:write',
+            'api_core_claim_evidence_challenge' => 'claim:evidence',
+            'api_core_claim_evidence_prepare' => 'claim:evidence',
         'api_core_claim_evidence_complete' => 'claim:evidence',
         'api_core_claim_submit' => 'claim:submit',
     ];

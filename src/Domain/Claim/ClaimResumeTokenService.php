@@ -8,10 +8,12 @@ use App\Entity\Core\LocationClaimRequest;
 
 final class ClaimResumeTokenService
 {
+    public const DEFAULT_EXPIRES_IN_SECONDS = 86400;
+
     /**
      * @return array{token: string, hash: string, expires_at: \DateTimeImmutable}
      */
-    public function generateToken(int $expiresInSeconds = 259200): array
+    public function generateToken(int $expiresInSeconds = self::DEFAULT_EXPIRES_IN_SECONDS): array
     {
         $token = bin2hex(random_bytes(32));
         $hash = hash('sha256', $token);

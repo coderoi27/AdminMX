@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Claim #{{ claim.id }} | Admin Mi Monchis MX{% endblock %}
+{% block header_title %}Revisión de claim{% endblock %}
+
+{% block body %}
+    {% set checklist = claim.reviewChecklistJson|default({}) %}
+    <div class="max-w-7xl mx-auto space-y-6">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+                <a href="{{ path('admin_claims_index') }}" class="text-sm font-bold text-orange-700">← Volver a Claims</a>
+                <h1 class="mt-3 text-3xl font-black text-slate-950">{{ claim.locationName ?: 'Local sin nombre' }}</h1>
+                <p class="mt-1 text-sm text-slate-500">Claim #{{ claim.id }} · {{ claim.claimUuid ?: 'UUID legado no disponible' }}</p>
+            </div>
+            <span class="rounded-full bg-slate-950 px-4 py-2 text-xs font-black uppercase tracking-wide text-white">{{ claim.status }}</span>
+        </div>
+
+        {% for label, messages in app.flashes %}{% for message in messages %}<div class="rounded-2xl border px-4 py-3 text-sm font-bold {{ label == 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800' }}">{{ message }}</div>{% endfor %}{% endfor %}
+
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
+            <div class="space-y-6">
+                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-lg font-black text-slate-950">Solicitud</h2>
+                    <dl class="mt-5 grid gap-5 sm:grid-cols-2">
+                        <div><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Solicitante</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.claimantName ?: 'No informado' }}</dd></div>
+                        <div><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Correo</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.email ?: 'No informado' }}</dd></div>
+                        <div><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Fuente</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.sourceType }}</dd></div>
+                        <div><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Fecha</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.createdAt|date('d/m/Y H:i') }}</dd></div>
+                        <div><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Enviada</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.submittedAt ? claim.submittedAt|date('d/m/Y H:i') : 'Aún no enviada' }}</dd></div>
+                        <div><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Aceptación legal</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.legalAcceptanceReference ?: 'Pendiente' }}</dd></div>
+                        <div class="sm:col-span-2"><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Dirección</dt><dd class="mt-1 font-bold text-slate-900">{{ claim.shortAddress ?: 'No informada' }}</dd></div>
+                        <div class="sm:col-span-2"><dt class="text-xs font-black uppercase tracking-wide text-slate-400">Mensaje</dt><dd class="mt-1 whitespace-pre-line text-slate-700">{{ claim.message ?: 'Sin mensaje' }}</dd></div>
+                    </dl>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div class="flex items-center justify-between gap-3"><h2 class="text-lg font-black text-slate-950">Evidencia privada</h2><span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-800">{{ evidences|length }} archivos</span></div>
+                    <p class="mt-2 text-xs text-slate-500">Los archivos se sirven por una ruta protegida. El bucket y la ruta privada nunca se muestran.</p>
+                    <div class="mt-5 grid gap-3">
+                        {% for evidence in evidences %}
+                            {% set signals = evidence.metadataJson|default({}) %}
+                            <article class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4">
+                                <div class="min-w-0"><strong class="block truncate text-sm text-slate-900">{{ evidence.originalFilename ?: 'Evidencia #' ~ evidence.id }}</strong><span class="mt-1 block text-xs text-slate-500">{{ evidence.evidenceType }} · {{ evidence.mimeType }} · {{ (evidence.sizeBytes / 1048576)|number_format(2) }} MB · {{ evidence.status }}{% if evidence.checksumSha256 %} · ETag {{ evidence.checksumSha256|slice(0, 12) }}…{% endif %}</span></div>
+                                {% if evidence.status in ['uploaded', 'verified'] %}<a href="{{ path('admin_claims_evidence', {claimId: claim.id, evidenceId: evidence.id}) }}" target="_blank" rel="noopener" class="shrink-0 rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white">Abrir</a>{% else %}<span class="shrink-0 text-xs font-bold text-slate-400">No disponible</span>{% endif %}
+                                {% if signals %}
+                                    <div class="mt-4 w-full rounded-2xl border border-orange-100 bg-orange-50 p-4 text-xs text-slate-700">
+                                        <h3 class="font-black text-slate-950">Señales de evidencia</h3>
+                                        <p class="mt-1 font-semibold text-orange-800">Estas señales apoyan la revisión humana y no constituyen una validación automática.</p>
+                                        <dl class="mt-3 grid gap-2 sm:grid-cols-2">
+                                            <div><dt class="font-black uppercase text-slate-400">Modo</dt><dd>{{ signals.capture_mode|default('no disponible') }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Audio</dt><dd>{{ signals.has_audio is defined ? (signals.has_audio ? 'presente' : 'no confirmado') : 'no disponible' }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Reto</dt><dd>{{ signals.challenge_text|default(signals.challenge_reference|default('no disponible')) }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Captura</dt><dd>{{ signals.capture_started_at|default('no disponible') }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Geolocalización</dt><dd>{{ signals.geolocation_status|default('no disponible') }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Precisión</dt><dd>{{ signals.accuracy_meters is defined ? signals.accuracy_meters ~ ' m' : 'no disponible' }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Distancia estimada</dt><dd>{{ signals.distance_meters is defined ? signals.distance_meters ~ ' m' : 'no disponible' }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Clasificación</dt><dd>{{ signals.location_signal|default('unavailable') }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Coordenadas esperadas</dt><dd>{{ signals.expected_latitude is defined and signals.expected_longitude is defined ? signals.expected_latitude ~ ', ' ~ signals.expected_longitude : 'no disponible' }}</dd></div>
+                                            <div><dt class="font-black uppercase text-slate-400">Coordenadas capturadas</dt><dd>{{ signals.captured_latitude is defined and signals.captured_longitude is defined ? signals.captured_latitude ~ ', ' ~ signals.captured_longitude : 'no disponible' }}</dd></div>
+                                        </dl>
+                                    </div>
+                                {% endif %}
+                            </article>
+                        {% else %}
+                            <div class="rounded-2xl bg-slate-50 p-5 text-sm font-semibold text-slate-500">Este claim no tiene evidencia registrada.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-lg font-black text-slate-950">Auditoría administrativa</h2>
+                    <div class="mt-5 space-y-3">
+                        {% for event in audit_events %}
+                            <article class="rounded-2xl border border-slate-100 bg-slate-50 p-4"><div class="flex justify-between gap-3"><strong class="text-sm text-slate-900">{{ event.eventName }}</strong><time class="text-xs text-slate-500">{{ event.occurredAt|date('d/m/Y H:i:s') }}</time></div><p class="mt-2 text-xs text-slate-500">Admin #{{ event.actorId ?: 'N/D' }}{% if event.metadataJson.from_status is defined %} · {{ event.metadataJson.from_status }} → {{ event.metadataJson.to_status }}{% endif %}</p></article>
+                        {% else %}<p class="text-sm text-slate-500">Aún no hay acciones administrativas auditadas.</p>{% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+                <form method="post" action="{{ path('admin_claims_notes', {id: claim.id}) }}" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <input type="hidden" name="_token" value="{{ csrf_token('claim_notes_' ~ claim.id) }}">
+                    <h2 class="text-lg font-black text-slate-950">Revisión interna</h2>
+                    <p class="mt-2 text-xs leading-relaxed text-slate-600">Este checklist documenta la revisión interna. Guardarlo no cambia el estado del Claim.</p>
+                    <div class="mt-5 grid gap-3 text-sm font-semibold text-slate-700">
+                        <label class="flex gap-2"><input type="checkbox" name="check_contact_verified" value="1" {{ checklist.contact_verified|default(false) ? 'checked' }}> Contacto verificado</label>
+                        <label class="flex gap-2"><input type="checkbox" name="check_ownership_evidence" value="1" {{ checklist.ownership_evidence|default(false) ? 'checked' }}> Evidencia de propiedad</label>
+                        <label class="flex gap-2"><input type="checkbox" name="check_location_match" value="1" {{ checklist.location_match|default(false) ? 'checked' }}> Coincide con el local</label>
+                    </div>
+                    <label class="mt-5 grid gap-2 text-xs font-black uppercase tracking-wide text-slate-500">Notas internas<textarea name="review_notes" rows="6" class="rounded-2xl border border-slate-200 p-3 text-sm font-medium normal-case text-slate-900" placeholder="Contexto para el equipo; no se expone a Public.">{{ claim.reviewNotes }}</textarea></label>
+                    <button class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-black text-slate-800">Guardar revisión</button>
+                </form>
+
+                <form method="post" action="{{ path('admin_claims_status', {id: claim.id}) }}" class="rounded-3xl border border-orange-200 bg-orange-50 p-6 shadow-sm">
+                    <input type="hidden" name="_token" value="{{ csrf_token('claim_status_' ~ claim.id) }}">
+                    {% for key, value in checklist %}<input type="hidden" name="check_{{ key }}" value="{{ value ? '1' : '0' }}">{% endfor %}
+                    <input type="hidden" name="review_notes" value="{{ claim.reviewNotes }}">
+                    <h2 class="text-lg font-black text-slate-950">Cambiar estado</h2>
+                    <p class="mt-2 text-xs leading-relaxed text-slate-600">Las acciones solo cambian el estado del claim. No crean, convierten ni publican locales.</p>
+                    {% if claim.status == 'pending_evidence' %}
+                        <p class="mt-3 rounded-2xl border border-orange-200 bg-white px-4 py-3 text-xs font-bold leading-relaxed text-orange-800">Las transiciones estarán disponibles después de que el reclamante complete y envíe la solicitud.</p>
+                    {% endif %}
+                    <div class="mt-5 grid gap-2">
+                        {% for status in review_actions %}
+                            {% if claim.canTransitionTo(status) %}<button type="submit" name="status" value="{{ status }}" class="rounded-xl px-4 py-3 text-sm font-black {{ status == 'approved' ? 'bg-emerald-700 text-white' : 'bg-white text-slate-800 border border-orange-200' }}">{{ status }}</button>{% endif %}
+                        {% endfor %}
+                    </div>
+                    {% if review_actions|filter(status => claim.canTransitionTo(status)) is empty %}<p class="mt-4 text-sm font-bold text-slate-500">No hay transiciones administrativas disponibles.</p>{% endif %}
+                </form>
+            </aside>
+        </div>
+    </div>
+{% endblock %}

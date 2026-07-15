@@ -53,5 +53,24 @@ class LocationClaimOtp
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    // Getters and Setters omitted for brevity...
+    public function getId(): ?int { return $this->id; }
+    public function getClaim(): LocationClaimRequest { return $this->claim; }
+    public function setClaim(LocationClaimRequest $claim): self { $this->claim = $claim; return $this; }
+    public function getPurpose(): string { return $this->purpose; }
+    public function setPurpose(string $purpose): self { $this->purpose = $purpose; return $this; }
+    public function getCodeHash(): string { return $this->codeHash; }
+    public function setCodeHash(string $codeHash): self { $this->codeHash = $codeHash; return $this; }
+    public function getExpiresAt(): \DateTimeImmutable { return $this->expiresAt; }
+    public function setExpiresAt(\DateTimeImmutable $expiresAt): self { $this->expiresAt = $expiresAt; return $this; }
+    public function getAttemptCount(): int { return $this->attemptCount; }
+    public function setAttemptCount(int $attemptCount): self { $this->attemptCount = $attemptCount; return $this; }
+    public function getMaxAttempts(): int { return $this->maxAttempts; }
+    public function setMaxAttempts(int $maxAttempts): self { $this->maxAttempts = $maxAttempts; return $this; }
+    public function getConsumedAt(): ?\DateTimeImmutable { return $this->consumedAt; }
+    public function setConsumedAt(?\DateTimeImmutable $consumedAt): self { $this->consumedAt = $consumedAt; return $this; }
+    public function getRequestedAt(): \DateTimeImmutable { return $this->requestedAt; }
+    public function setRequestedAt(\DateTimeImmutable $requestedAt): self { $this->requestedAt = $requestedAt; return $this; }
+    public function getLastAttemptAt(): ?\DateTimeImmutable { return $this->lastAttemptAt; }
+    public function setLastAttemptAt(?\DateTimeImmutable $lastAttemptAt): self { $this->lastAttemptAt = $lastAttemptAt; return $this; }
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 }

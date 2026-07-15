@@ -19,8 +19,14 @@ class CreateLocationClaimDraftTest extends TestCase
         $em->expects($this->once())->method('flush');
 
         $useCase = new CreateLocationClaimDraft($em);
-        $claim = $useCase->execute('Mi Local', 'owner@example.com');
+        $claim = $useCase->execute(
+            'google_places',
+            'Mi Local',
+            'ChIJ_test123',
+            email: 'owner@example.com',
+        );
 
+        $this->assertSame('google_places', $claim->getSourceType());
         $this->assertSame('Mi Local', $claim->getLocationName());
         $this->assertSame('owner@example.com', $claim->getEmail());
         $this->assertSame(ClaimStateMachine::STATE_DRAFT, $claim->getStatus());

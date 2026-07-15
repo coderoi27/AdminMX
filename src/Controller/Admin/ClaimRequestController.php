@@ -4,124 +4,276 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Entity\Core\LocationCategory;
+use App\Domain\Claim\ClaimEvidenceStorageInterface;
+use App\Domain\Claim\ClaimStateMachine;
+use App\Entity\Admin\AdminUser;
+use App\Entity\Core\EventLog;
+use App\Entity\Core\LocationClaimEvidence;
 use App\Entity\Core\LocationClaimRequest;
-use App\Entity\Core\Merchant;
-use App\Entity\Core\MerchantLocation;
-use App\Entity\Core\PlaceAddress;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[Route('/claims', name: 'admin_claims_')]
 final class ClaimRequestController extends AbstractController
 {
+    private const REVIEW_ACTIONS = [
+        LocationClaimRequest::STATUS_UNDER_REVIEW,
+        LocationClaimRequest::STATUS_NEEDS_INFO,
+        LocationClaimRequest::STATUS_APPROVED,
+        LocationClaimRequest::STATUS_REJECTED,
+    ];
+
     #[Route('', name: 'index', methods: ['GET'])]
-    public function index(EntityManagerInterface $entityManager): Response
+    public function index(Request $request, EntityManagerInterface $entityManager): Response
     {
+        $statuses = [
+            ClaimStateMachine::STATE_DRAFT,
+            ClaimStateMachine::STATE_PENDING_EMAIL_VERIFICATION,
+            ClaimStateMachine::STATE_PENDING_EVIDENCE,
+            ClaimStateMachine::STATE_SUBMITTED,
+            ClaimStateMachine::STATE_UNDER_REVIEW,
+            ClaimStateMachine::STATE_NEEDS_INFO,
+            ClaimStateMachine::STATE_APPROVED,
+            ClaimStateMachine::STATE_REJECTED,
+            ClaimStateMachine::STATE_CONVERTED,
+            ClaimStateMachine::STATE_EXPIRED,
+            ClaimStateMachine::STATE_CANCELLED,
+            ClaimStateMachine::STATE_REVOKED_BEFORE_CONVERSION,
+            ClaimStateMachine::STATE_CLOSED,
+        ];
+        $status = trim($request->query->getString('status'));
+        $source = trim($request->query->getString('source'));
+        $dateFrom = $this->parseDate($request->query->getString('date_from'));
+        $dateTo = $this->parseDate($request->query->getString('date_to'));
+
+        $queryBuilder = $entityManager->getRepository(LocationClaimRequest::class)
+            ->createQueryBuilder('claim')
+            ->orderBy('claim.createdAt', 'DESC')
+            ->setMaxResults(100);
+
+        if (in_array($status, $statuses, true)) {
+            $queryBuilder->andWhere('claim.status = :status')->setParameter('status', $status);
+        } else {
+            $status = '';
+        }
+        if ($source !== '') {
+            $queryBuilder->andWhere('claim.sourceType = :source')->setParameter('source', $source);
+        }
+        if ($dateFrom !== null) {
+            $queryBuilder->andWhere('claim.createdAt >= :dateFrom')->setParameter('dateFrom', $dateFrom);
+        }
+        if ($dateTo !== null) {
+            $queryBuilder->andWhere('claim.createdAt < :dateTo')->setParameter('dateTo', $dateTo->modify('+1 day'));
+        }
+
+        $sourceRows = $entityManager->createQueryBuilder()
+            ->select('DISTINCT claimSource.sourceType AS sourceType')
+            ->from(LocationClaimRequest::class, 'claimSource')
+            ->orderBy('claimSource.sourceType', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
         return $this->render('admin/claims/index.html.twig', [
-            'claims' => $entityManager->getRepository(LocationClaimRequest::class)->findBy([], ['id' => 'DESC'], 60),
-            'statuses' => LocationClaimRequest::statuses(),
+            'claims' => $queryBuilder->getQuery()->getResult(),
+            'statuses' => $statuses,
+            'sources' => array_column($sourceRows, 'sourceType'),
+            'filters' => [
+                'status' => $status,
+                'source' => $source,
+                'date_from' => $dateFrom?->format('Y-m-d') ?? '',
+                'date_to' => $dateTo?->format('Y-m-d') ?? '',
+            ],
         ]);
     }
 
-    #[Route('/{id}/status', name: 'status', methods: ['POST'])]
-    public function status(LocationClaimRequest $claim, Request $request, EntityManagerInterface $entityManager): RedirectResponse
+    #[Route('/{id<\d+>}', name: 'show', methods: ['GET'])]
+    public function show(LocationClaimRequest $claim, EntityManagerInterface $entityManager): Response
     {
-        if (!$this->isCsrfTokenValid(sprintf('claim_status_%d', $claim->getId()), (string) $request->request->get('_token'))) {
-            $this->addFlash('error', 'No se pudo validar la solicitud del claim.');
+        $evidences = $entityManager->getRepository(LocationClaimEvidence::class)->findBy(
+            ['claim' => $claim],
+            ['createdAt' => 'DESC'],
+        );
+        $auditEvents = $entityManager->getRepository(EventLog::class)->findBy(
+            ['entityType' => 'location_claim_request', 'entityId' => $claim->getId(), 'sourceApp' => 'admin'],
+            ['occurredAt' => 'DESC'],
+        );
 
-            return $this->redirectToRoute('admin_claims_index');
-        }
+        return $this->render('admin/claims/show.html.twig', [
+            'claim' => $claim,
+            'evidences' => $evidences,
+            'audit_events' => $auditEvents,
+            'review_actions' => self::REVIEW_ACTIONS,
+        ]);
+    }
 
-        $status = (string) $request->request->get('status');
-        if (!in_array($status, LocationClaimRequest::statuses(), true)) {
-            $this->addFlash('error', 'El estado del claim no es válido.');
+    #[Route('/{id<\d+>}/notes', name: 'notes', methods: ['POST'])]
+    public function notes(LocationClaimRequest $claim, Request $request, EntityManagerInterface $entityManager): RedirectResponse
+    {
+        if (!$this->isCsrfTokenValid(sprintf('claim_notes_%d', $claim->getId()), $request->request->getString('_token'))) {
+            $this->addFlash('error', 'No se pudo validar la actualización.');
 
-            return $this->redirectToRoute('admin_claims_index');
-        }
-        if (!$claim->canTransitionTo($status)) {
-            $this->addFlash('error', sprintf('La transición del claim %s -> %s no está permitida.', $claim->getStatus(), $status));
-
-            return $this->redirectToRoute('admin_claims_index');
-        }
-
-        $evidenceLinks = $this->evidenceLinksFromRequest($request);
-        $reviewChecklist = $this->reviewChecklistFromRequest($request);
-        $reviewNotes = $this->emptyToNull($request->request->getString('review_notes', ''));
-
-        if ($status === LocationClaimRequest::STATUS_APPROVED && ($evidenceLinks === [] || !$this->reviewChecklistIsComplete($reviewChecklist))) {
-            $this->addFlash('error', 'Para aprobar un claim necesitas al menos una evidencia y completar el checklist operativo.');
-
-            return $this->redirectToRoute('admin_claims_index');
-        }
-
-        if ($status === LocationClaimRequest::STATUS_REJECTED && $reviewNotes === null) {
-            $this->addFlash('error', 'Para rechazar un claim captura una nota de revisión.');
-
-            return $this->redirectToRoute('admin_claims_index');
+            return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
         }
 
         $claim
-            ->setEvidenceLinksJson($evidenceLinks !== [] ? $evidenceLinks : null)
-            ->setReviewChecklistJson($reviewChecklist)
-            ->setReviewNotes($reviewNotes)
-            ->setStatus($status)
-            ->setReviewedAt(new \DateTimeImmutable());
-
-        if ($status === LocationClaimRequest::STATUS_APPROVED) {
-            $this->materializeApprovedClaim($claim, $entityManager);
-        }
-
+            ->setReviewChecklistJson($this->reviewChecklistFromRequest($request))
+            ->setReviewNotes($this->emptyToNull($request->request->getString('review_notes')));
+        $this->recordAudit($entityManager, $claim, 'admin_claim_notes_updated', [
+            'status' => $claim->getStatus(),
+            'checklist' => $claim->getReviewChecklistJson(),
+            'has_internal_note' => $claim->getReviewNotes() !== null,
+        ]);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Claim actualizado correctamente.');
+        $this->addFlash('success', 'Notas internas guardadas.');
 
-        return $this->redirectToRoute('admin_claims_index');
+        return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
     }
 
-    /**
-     * @return list<array{url:string}>
-     */
-    private function evidenceLinksFromRequest(Request $request): array
-    {
-        $rawLinks = preg_split('/\R+/', $request->request->getString('evidence_links', '')) ?: [];
-        $links = [];
-        foreach ($rawLinks as $rawLink) {
-            $url = trim((string) $rawLink);
-            if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-                continue;
-            }
-            if (!in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
-                continue;
-            }
-            $links[] = ['url' => $url];
+    #[Route('/{id<\d+>}/status', name: 'status', methods: ['POST'])]
+    public function status(
+        LocationClaimRequest $claim,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        ClaimStateMachine $stateMachine,
+    ): RedirectResponse {
+        if (!$this->isCsrfTokenValid(sprintf('claim_status_%d', $claim->getId()), $request->request->getString('_token'))) {
+            $this->addFlash('error', 'No se pudo validar la transición.');
+
+            return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
         }
 
-        return array_values(array_slice($links, 0, 12));
+        $targetStatus = $request->request->getString('status');
+        if (!in_array($targetStatus, self::REVIEW_ACTIONS, true)
+            || !$stateMachine->canTransitionTo($claim->getStatus(), $targetStatus)) {
+            $this->addFlash('error', sprintf('La transición %s -> %s no está permitida.', $claim->getStatus(), $targetStatus));
+
+            return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
+        }
+
+        $notes = $this->emptyToNull($request->request->getString('review_notes'));
+        $checklist = $this->reviewChecklistFromRequest($request);
+        $evidenceCount = $entityManager->getRepository(LocationClaimEvidence::class)->count([
+            'claim' => $claim,
+            'status' => [LocationClaimEvidence::STATUS_UPLOADED, LocationClaimEvidence::STATUS_VERIFIED],
+        ]);
+
+        if ($targetStatus === LocationClaimRequest::STATUS_APPROVED
+            && ($evidenceCount === 0 || !$this->reviewChecklistIsComplete($checklist))) {
+            $this->addFlash('error', 'Para aprobar se requiere evidencia privada disponible y el checklist completo.');
+
+            return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
+        }
+        if (in_array($targetStatus, [LocationClaimRequest::STATUS_NEEDS_INFO, LocationClaimRequest::STATUS_REJECTED], true)
+            && $notes === null) {
+            $this->addFlash('error', 'Captura una nota interna que justifique esta transición.');
+
+            return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
+        }
+
+        $previousStatus = $claim->getStatus();
+        $claim
+            ->setReviewChecklistJson($checklist)
+            ->setReviewNotes($notes)
+            ->setStatus($targetStatus)
+            ->setReviewedAt(new \DateTimeImmutable());
+
+        $this->recordAudit($entityManager, $claim, 'admin_claim_status_changed', [
+            'from_status' => $previousStatus,
+            'to_status' => $targetStatus,
+            'checklist' => $checklist,
+            'has_internal_note' => $notes !== null,
+            'evidence_count' => $evidenceCount,
+            'materialized' => false,
+        ]);
+        $entityManager->flush();
+
+        $this->addFlash('success', sprintf('Claim actualizado a %s. No se materializó ningún local.', $targetStatus));
+
+        return $this->redirectToRoute('admin_claims_show', ['id' => $claim->getId()]);
     }
 
-    /**
-     * @return array{contact_verified:bool, ownership_evidence:bool, location_match:bool}
-     */
+    #[Route('/{claimId<\d+>}/evidence/{evidenceId<\d+>}', name: 'evidence', methods: ['GET'])]
+    public function evidence(
+        int $claimId,
+        int $evidenceId,
+        EntityManagerInterface $entityManager,
+        ClaimEvidenceStorageInterface $storage,
+        HttpClientInterface $httpClient,
+    ): Response {
+        $evidence = $entityManager->find(LocationClaimEvidence::class, $evidenceId);
+        if (!$evidence instanceof LocationClaimEvidence
+            || $evidence->getClaim()->getId() !== $claimId
+            || !in_array($evidence->getStatus(), [LocationClaimEvidence::STATUS_UPLOADED, LocationClaimEvidence::STATUS_VERIFIED], true)) {
+            throw new NotFoundHttpException('La evidencia no está disponible.');
+        }
+
+        try {
+            $signedUrl = $storage->createReadUrl($evidence->getObjectKey(), 120);
+            $upstream = $httpClient->request('GET', $signedUrl);
+            if ($upstream->getStatusCode() !== Response::HTTP_OK) {
+                throw new \RuntimeException('El storage privado rechazó la lectura.');
+            }
+        } catch (\Throwable) {
+            $this->addFlash('error', 'No fue posible abrir la evidencia privada. Intenta de nuevo.');
+
+            return $this->redirectToRoute('admin_claims_show', ['id' => $claimId]);
+        }
+
+        $this->recordAudit($entityManager, $evidence->getClaim(), 'admin_claim_evidence_viewed', [
+            'evidence_id' => $evidence->getId(),
+            'evidence_type' => $evidence->getEvidenceType(),
+        ]);
+        $entityManager->flush();
+
+        $response = new StreamedResponse(static function () use ($httpClient, $upstream): void {
+            foreach ($httpClient->stream($upstream) as $chunk) {
+                if (!$chunk->isTimeout()) {
+                    echo $chunk->getContent();
+                }
+            }
+        });
+        $response->headers->set('Content-Type', $evidence->getMimeType() ?: 'application/octet-stream');
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_INLINE,
+            $evidence->getOriginalFilename() ?: sprintf('evidence-%d', $evidence->getId()),
+        ));
+        $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+        return $response;
+    }
+
+    private function parseDate(string $value): ?\DateTimeImmutable
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', trim($value));
+
+        return $date instanceof \DateTimeImmutable ? $date : null;
+    }
+
+    /** @return array{contact_verified:bool, ownership_evidence:bool, location_match:bool} */
     private function reviewChecklistFromRequest(Request $request): array
     {
         return [
-            'contact_verified' => $request->request->getBoolean('check_contact_verified', false),
-            'ownership_evidence' => $request->request->getBoolean('check_ownership_evidence', false),
-            'location_match' => $request->request->getBoolean('check_location_match', false),
+            'contact_verified' => $request->request->getBoolean('check_contact_verified'),
+            'ownership_evidence' => $request->request->getBoolean('check_ownership_evidence'),
+            'location_match' => $request->request->getBoolean('check_location_match'),
         ];
     }
 
-    /**
-     * @param array{contact_verified:bool, ownership_evidence:bool, location_match:bool} $reviewChecklist
-     */
-    private function reviewChecklistIsComplete(array $reviewChecklist): bool
+    /** @param array{contact_verified:bool, ownership_evidence:bool, location_match:bool} $checklist */
+    private function reviewChecklistIsComplete(array $checklist): bool
     {
-        return $reviewChecklist['contact_verified'] && $reviewChecklist['ownership_evidence'] && $reviewChecklist['location_match'];
+        return $checklist['contact_verified'] && $checklist['ownership_evidence'] && $checklist['location_match'];
     }
 
     private function emptyToNull(string $value): ?string
@@ -131,132 +283,22 @@ final class ClaimRequestController extends AbstractController
         return $value !== '' ? $value : null;
     }
 
-    private function materializeApprovedClaim(LocationClaimRequest $claim, EntityManagerInterface $entityManager): void
-    {
-        $location = null;
-
-        if ($claim->getCanonicalLocationId() !== null) {
-            $location = $entityManager->find(MerchantLocation::class, $claim->getCanonicalLocationId());
-        }
-
-        if (!$location instanceof MerchantLocation && $claim->getExternalSourceKey() !== null) {
-            $location = $entityManager->getRepository(MerchantLocation::class)->findOneBy([
-                'externalSourceKey' => $claim->getExternalSourceKey(),
-            ]);
-        }
-
-        if (!$location instanceof MerchantLocation) {
-            $location = $this->createCanonicalLocationFromClaim($claim, $entityManager);
-            $entityManager->persist($location->getMerchant());
-            $entityManager->persist($location);
-            $entityManager->flush();
-        }
-
-        $location
-            ->setSourceType(MerchantLocation::SOURCE_TYPE_CLAIMED)
-            ->setStatus(MerchantLocation::STATUS_ACTIVE)
-            ->setIsClaimable(false)
-            ->setClaimedAt(new \DateTimeImmutable())
-            ->setExternalSourceKey($claim->getExternalSourceKey());
-        $this->publishClaimedLocation($location);
-
-        $claim->setCanonicalLocationId($location->getId());
-    }
-
-    private function publishClaimedLocation(MerchantLocation $location): void
-    {
-        if ($location->getPublicationState() === MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE) {
-            return;
-        }
-
-        if ($location->getPublicationState() === MerchantLocation::PUBLICATION_STATE_HIDDEN) {
-            $location->setPublicationState(MerchantLocation::PUBLICATION_STATE_PENDING_VISIBLE);
-        }
-
-        $location->setPublicationState(MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE);
-    }
-
-    private function createCanonicalLocationFromClaim(LocationClaimRequest $claim, EntityManagerInterface $entityManager): MerchantLocation
-    {
-        $prefill = $claim->getPrefillPayloadJson() ?? [];
-        $merchantName = trim($claim->getLocationName());
-        $baseSlug = $this->slugify($merchantName !== '' ? $merchantName : 'local-claim');
-
-        $merchant = (new Merchant())
-            ->setName($merchantName !== '' ? $merchantName : 'Local reclamado')
-            ->setSlug($this->nextAvailableMerchantSlug($entityManager, $baseSlug))
-            ->setStatus('active');
-
-        $location = (new MerchantLocation())
-            ->setMerchant($merchant)
-            ->setName($merchantName !== '' ? $merchantName : 'Local reclamado')
-            ->setSlug($this->nextAvailableLocationSlug($entityManager, $baseSlug))
-            ->setLocationType('fixed')
-            ->setStatus(MerchantLocation::STATUS_ACTIVE)
-            ->setPublicationState(MerchantLocation::PUBLICATION_STATE_PUBLIC_VISIBLE)
-            ->setSourceType(MerchantLocation::SOURCE_TYPE_CLAIMED)
-            ->setExternalSourceKey($claim->getExternalSourceKey())
-            ->setShortDescription($claim->getMessage())
-            ->setIsClaimable(false)
-            ->setClaimedAt(new \DateTimeImmutable());
-
-        $categorySlug = is_string($prefill['category_slug'] ?? null) ? trim((string) $prefill['category_slug']) : '';
-        if ($categorySlug !== '') {
-            $category = $entityManager->getRepository(LocationCategory::class)->findOneBy(['slug' => $categorySlug]);
-            if ($category instanceof LocationCategory) {
-                $location->setPrimaryCategory($category);
-            }
-        }
-
-        $address = (new PlaceAddress())
-            ->setIsPrimary(true)
-            ->setLabel('Claim Google')
-            ->setNeighborhood($claim->getShortAddress())
-            ->setReference($claim->getShortAddress())
-            ->setLatitude(isset($prefill['lat']) && is_numeric((string) $prefill['lat']) ? (string) $prefill['lat'] : '0.0000000')
-            ->setLongitude(isset($prefill['lng']) && is_numeric((string) $prefill['lng']) ? (string) $prefill['lng'] : '0.0000000');
-
-        $location->addAddress($address);
-
-        return $location;
-    }
-
-    private function slugify(string $value): string
-    {
-        $normalized = mb_strtolower($value);
-        if (function_exists('transliterator_transliterate')) {
-            $normalized = transliterator_transliterate('Any-Latin; Latin-ASCII;', $normalized) ?? $normalized;
-        }
-
-        $slug = preg_replace('/[^a-z0-9]+/i', '-', $normalized);
-        $slug = trim((string) $slug, '-');
-
-        return $slug !== '' ? $slug : 'local-claim';
-    }
-
-    private function nextAvailableMerchantSlug(EntityManagerInterface $entityManager, string $baseSlug): string
-    {
-        $slug = $baseSlug;
-        $index = 2;
-
-        while ($entityManager->getRepository(Merchant::class)->findOneBy(['slug' => $slug]) instanceof Merchant) {
-            $slug = sprintf('%s-%d', $baseSlug, $index);
-            $index += 1;
-        }
-
-        return $slug;
-    }
-
-    private function nextAvailableLocationSlug(EntityManagerInterface $entityManager, string $baseSlug): string
-    {
-        $slug = $baseSlug;
-        $index = 2;
-
-        while ($entityManager->getRepository(MerchantLocation::class)->findOneBy(['slug' => $slug]) instanceof MerchantLocation) {
-            $slug = sprintf('%s-%d', $baseSlug, $index);
-            $index += 1;
-        }
-
-        return $slug;
+    /** @param array<string, mixed> $metadata */
+    private function recordAudit(
+        EntityManagerInterface $entityManager,
+        LocationClaimRequest $claim,
+        string $eventName,
+        array $metadata,
+    ): void {
+        $admin = $this->getUser();
+        $event = (new EventLog())
+            ->setEventName($eventName)
+            ->setActorType('admin_user')
+            ->setActorId($admin instanceof AdminUser ? $admin->getId() : null)
+            ->setEntityType('location_claim_request')
+            ->setEntityId($claim->getId())
+            ->setSourceApp('admin')
+            ->setMetadataJson($metadata);
+        $entityManager->persist($event);
     }
 }

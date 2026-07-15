@@ -11,8 +11,12 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class LocationClaimRequest
 {
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_PENDING_EMAIL_VERIFICATION = 'pending_email_verification';
+    public const STATUS_PENDING_EVIDENCE = 'pending_evidence';
     public const STATUS_SUBMITTED = 'submitted';
     public const STATUS_UNDER_REVIEW = 'under_review';
+    public const STATUS_NEEDS_INFO = 'needs_info';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_REJECTED = 'rejected';
     public const STATUS_CONVERTED = 'converted';
@@ -37,11 +41,11 @@ class LocationClaimRequest
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $shortAddress = null;
 
-    #[ORM\Column(length: 160)]
-    private string $claimantName = '';
+    #[ORM\Column(length: 160, nullable: true)]
+    private ?string $claimantName = null;
 
-    #[ORM\Column(length: 180)]
-    private string $email = '';
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $email = null;
 
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $whatsappE164 = null;
@@ -139,6 +143,9 @@ class LocationClaimRequest
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $cancelledAt = null;
 
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $submissionMode = null;
+
     #[ORM\PrePersist]
     public function onCreate(): void
     {
@@ -230,26 +237,26 @@ class LocationClaimRequest
         return $this;
     }
 
-    public function getClaimantName(): string
+    public function getClaimantName(): ?string
     {
         return $this->claimantName;
     }
 
-    public function setClaimantName(string $claimantName): self
+    public function setClaimantName(?string $claimantName): self
     {
         $this->claimantName = $claimantName;
 
         return $this;
     }
 
-    public function getEmail(): string
+    public function getEmail(): ?string
     {
         return $this->email;
     }
 
-    public function setEmail(string $email): self
+    public function setEmail(?string $email): self
     {
-        $this->email = mb_strtolower($email);
+        $this->email = $email === null ? null : mb_strtolower($email);
 
         return $this;
     }
@@ -294,6 +301,17 @@ class LocationClaimRequest
         }
 
         $this->status = $status;
+
+        $now = new \DateTimeImmutable();
+        match ($status) {
+            self::STATUS_SUBMITTED => $this->submittedAt = $now,
+            self::STATUS_UNDER_REVIEW => $this->underReviewAt = $now,
+            self::STATUS_NEEDS_INFO => $this->needsInfoAt = $now,
+            self::STATUS_APPROVED => $this->approvedAt = $now,
+            self::STATUS_REJECTED => $this->rejectedAt = $now,
+            self::STATUS_CONVERTED => $this->convertedAt = $now,
+            default => null,
+        };
 
         return $this;
     }
@@ -358,6 +376,11 @@ class LocationClaimRequest
         return $this->reviewedAt;
     }
 
+    public function getSubmittedAt(): ?\DateTimeImmutable
+    {
+        return $this->submittedAt;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -369,8 +392,12 @@ class LocationClaimRequest
     public static function statuses(): array
     {
         return [
+            self::STATUS_DRAFT,
+            self::STATUS_PENDING_EMAIL_VERIFICATION,
+            self::STATUS_PENDING_EVIDENCE,
             self::STATUS_SUBMITTED,
             self::STATUS_UNDER_REVIEW,
+            self::STATUS_NEEDS_INFO,
             self::STATUS_APPROVED,
             self::STATUS_REJECTED,
             self::STATUS_CONVERTED,
@@ -380,8 +407,12 @@ class LocationClaimRequest
     public static function statusLabel(string $status): string
     {
         return match ($status) {
+            self::STATUS_DRAFT => 'draft',
+            self::STATUS_PENDING_EMAIL_VERIFICATION => 'pending_email_verification',
+            self::STATUS_PENDING_EVIDENCE => 'pending_evidence',
             self::STATUS_SUBMITTED => 'submitted',
             self::STATUS_UNDER_REVIEW => 'under_review',
+            self::STATUS_NEEDS_INFO => 'needs_info',
             self::STATUS_APPROVED => 'approved',
             self::STATUS_REJECTED => 'rejected',
             self::STATUS_CONVERTED => 'converted',
@@ -404,24 +435,141 @@ class LocationClaimRequest
     public static function statusTransitions(): array
     {
         return [
-            self::STATUS_SUBMITTED => [self::STATUS_UNDER_REVIEW, self::STATUS_REJECTED],
-            self::STATUS_UNDER_REVIEW => [self::STATUS_APPROVED, self::STATUS_REJECTED],
+            self::STATUS_DRAFT => [self::STATUS_PENDING_EMAIL_VERIFICATION],
+            self::STATUS_PENDING_EMAIL_VERIFICATION => [self::STATUS_PENDING_EVIDENCE],
+            self::STATUS_PENDING_EVIDENCE => [self::STATUS_SUBMITTED],
+            self::STATUS_SUBMITTED => [self::STATUS_UNDER_REVIEW],
+            self::STATUS_UNDER_REVIEW => [self::STATUS_NEEDS_INFO, self::STATUS_APPROVED, self::STATUS_REJECTED],
+            self::STATUS_NEEDS_INFO => [self::STATUS_PENDING_EVIDENCE, self::STATUS_SUBMITTED, self::STATUS_REJECTED],
             self::STATUS_APPROVED => [self::STATUS_CONVERTED],
-            self::STATUS_REJECTED => [self::STATUS_UNDER_REVIEW],
+            self::STATUS_REJECTED => [],
             self::STATUS_CONVERTED => [],
         ];
     }
 
+    public function getSubmissionMode(): ?string
+    {
+        return $this->submissionMode;
+    }
+
+    public function setSubmissionMode(?string $submissionMode): self
+    {
+        $this->submissionMode = $submissionMode;
+
+        return $this;
+    }
+
+    public function getClaimantRole(): ?string
+    {
+        return $this->claimantRole;
+    }
+
+    public function getClaimantPhoneE164(): ?string
+    {
+        return $this->claimantPhoneE164;
+    }
+
+    public function getBusinessPhoneE164(): ?string
+    {
+        return $this->businessPhoneE164;
+    }
+
+    public function getProposedName(): ?string
+    {
+        return $this->proposedName;
+    }
+
+    public function getProposedAddressJson(): ?array
+    {
+        return $this->proposedAddressJson;
+    }
+
+    public function getConfirmedLatitude(): ?float
+    {
+        return $this->confirmedLatitude;
+    }
+
+    public function getConfirmedLongitude(): ?float
+    {
+        return $this->confirmedLongitude;
+    }
+
+    public function getLegalAcceptanceReference(): ?string
+    {
+        return $this->legalAcceptanceReference;
+    }
+
+    public function setLegalAcceptanceReference(?string $legalAcceptanceReference): self
+    {
+        $this->legalAcceptanceReference = $legalAcceptanceReference;
+
+        return $this;
+    }
+
+    public function getResumeTokenHash(): ?string
+    {
+        return $this->resumeTokenHash;
+    }
+
+    public function setResumeTokenHash(?string $resumeTokenHash): self
+    {
+        $this->resumeTokenHash = $resumeTokenHash;
+
+        return $this;
+    }
+
+    public function getResumeTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->resumeTokenExpiresAt;
+    }
+
+    public function setResumeTokenExpiresAt(?\DateTimeImmutable $resumeTokenExpiresAt): self
+    {
+        $this->resumeTokenExpiresAt = $resumeTokenExpiresAt;
+
+        return $this;
+    }
+
+    public function getResumeTokenRevokedAt(): ?\DateTimeImmutable
+    {
+        return $this->resumeTokenRevokedAt;
+    }
+
+    public function setResumeTokenRevokedAt(?\DateTimeImmutable $resumeTokenRevokedAt): self
+    {
+        $this->resumeTokenRevokedAt = $resumeTokenRevokedAt;
+
+        return $this;
+    }
+
+    public function getLastCompletedStep(): ?string
+    {
+        return $this->lastCompletedStep;
+    }
+
+    public function setLastCompletedStep(?string $lastCompletedStep): self
+    {
+        $this->lastCompletedStep = $lastCompletedStep;
+
+        return $this;
+    }
+
+    /**
+     * Get the datetime when the email was verified.
+     */
     public function getEmailVerifiedAt(): ?\DateTimeImmutable
     {
         return $this->emailVerifiedAt;
     }
 
-    public function markEmailVerified(
-        ?\DateTimeImmutable $dateTime = null,
-    ): self {
+    /**
+     * Mark the email as verified.
+     *
+     * @param \DateTimeImmutable|null $dateTime Use a specific datetime or defaults to now.
+     */
+    public function markEmailVerified(?\DateTimeImmutable $dateTime = null): self
+    {
         $this->emailVerifiedAt = $dateTime ?? new \DateTimeImmutable();
-
         return $this;
     }
 }

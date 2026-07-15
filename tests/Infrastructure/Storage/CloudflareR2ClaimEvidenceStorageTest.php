@@ -12,18 +12,13 @@ use Psr\Log\LoggerInterface;
 
 class CloudflareR2ClaimEvidenceStorageTest extends TestCase
 {
-    private $s3Client;
-    private $logger;
-    private $storage;
+    private CloudflareR2ClaimEvidenceStorage $storage;
 
     protected function setUp(): void
     {
-        $this->s3Client = $this->createMock(S3ClientInterface::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-
         $this->storage = new CloudflareR2ClaimEvidenceStorage(
-            $this->s3Client,
-            $this->logger,
+            $this->createStub(S3ClientInterface::class),
+            $this->createStub(LoggerInterface::class),
             'test-bucket',
             900,
             300,

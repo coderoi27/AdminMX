@@ -9,10 +9,17 @@ use App\Entity\Core\LocationClaimRequest;
 
 final class ClaimOtpService
 {
+    public const DEFAULT_EXPIRES_IN_SECONDS = 600;
+    public const DEFAULT_MAX_ATTEMPTS = 3;
+    public const VERIFY_VALID = 'valid';
+    public const VERIFY_INVALID = 'invalid';
+    public const VERIFY_EXPIRED = 'expired';
+    public const VERIFY_ATTEMPTS_EXHAUSTED = 'attempts_exhausted';
+
     /**
      * @return array{code: string, entity: LocationClaimOtp}
      */
-    public function generateOtp(LocationClaimRequest $claim, string $purpose, int $expiresInSeconds = 600, int $maxAttempts = 3): array
+    public function generateOtp(LocationClaimRequest $claim, string $purpose, int $expiresInSeconds = self::DEFAULT_EXPIRES_IN_SECONDS, int $maxAttempts = self::DEFAULT_MAX_ATTEMPTS): array
     {
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $hash = password_hash($code, PASSWORD_DEFAULT);
@@ -48,8 +55,13 @@ final class ClaimOtpService
 
     public function verifyOtp(LocationClaimOtp $otp, string $code): bool
     {
+        return $this->verifyOtpResult($otp, $code) === self::VERIFY_VALID;
+    }
+
+    public function verifyOtpResult(LocationClaimOtp $otp, string $code): string
+    {
         if ($otp->getConsumedAt() !== null) {
-            return false;
+            return self::VERIFY_INVALID;
         }
 
         $now = new \DateTimeImmutable();
@@ -63,20 +75,20 @@ final class ClaimOtpService
         $attemptCountProp->setValue($otp, $currentAttempts + 1);
 
         if ($now > $otp->getExpiresAt()) {
-            return false;
+            return self::VERIFY_EXPIRED;
         }
 
         if ($currentAttempts >= $otp->getMaxAttempts()) {
-            return false;
+            return self::VERIFY_ATTEMPTS_EXHAUSTED;
         }
 
         if (!password_verify($code, $otp->getCodeHash())) {
-            return false;
+            return self::VERIFY_INVALID;
         }
 
         $consumedAtProp = $reflection->getProperty('consumedAt');
         $consumedAtProp->setValue($otp, $now);
 
-        return true;
+        return self::VERIFY_VALID;
     }
 }

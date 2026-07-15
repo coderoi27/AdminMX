@@ -39,7 +39,8 @@ final class RequestLocationClaimOtp
         }
 
         // Generate OTP
-        $result = $this->otpService->generateOtp($claim, 'email_verification');
+        $ttlSeconds = ClaimOtpService::DEFAULT_EXPIRES_IN_SECONDS;
+        $result = $this->otpService->generateOtp($claim, 'email_verification', $ttlSeconds);
         
         $otpCode = $result['code'];
         $otpEntity = $result['entity'];
@@ -48,19 +49,27 @@ final class RequestLocationClaimOtp
 
         // Update claim status if it's draft
         if ($claim->getStatus() === ClaimStateMachine::STATE_DRAFT) {
-            $reflection = new \ReflectionClass($claim);
-            $prop = $reflection->getProperty('status');
-            $prop->setValue($claim, ClaimStateMachine::STATE_PENDING_EMAIL_VERIFICATION);
+            $claim->setStatus(ClaimStateMachine::STATE_PENDING_EMAIL_VERIFICATION);
         }
 
         $this->em->flush();
 
         // Send OTP via email
-        $this->notificationSender->sendEmailOtp($claim, $otpCode);
+        try {
+            $this->notificationSender->sendEmailOtp($claim, $otpCode, (int) ceil($ttlSeconds / 60));
+        } catch (\Throwable $e) {
+            $this->em->remove($otpEntity);
+            // Optionally, we could revert the status back to DRAFT here, but leaving it as PENDING_EMAIL_VERIFICATION is fine
+            // since they can request another OTP.
+            $this->em->flush();
+            throw $e;
+        }
 
         return [
             'status' => $claim->getStatus(),
             'expires_at' => $otpEntity->getExpiresAt()->format(\DateTimeInterface::ATOM),
+            'expires_in_seconds' => $ttlSeconds,
+            'expires_in_minutes' => (int) ceil($ttlSeconds / 60),
             'retry_after_seconds' => 60,
         ];
     }

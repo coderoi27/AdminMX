@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class LocationClaimCollectionController extends AbstractController
 {
     #[Route('/api/v1/location-claims', name: 'api_core_location_claims_collection', methods: ['GET', 'POST'])]
-    public function __invoke(Request $request, EntityManagerInterface $entityManager, CreateLocationClaimDraft $createDraft): JsonResponse
+    public function __invoke(Request $request, EntityManagerInterface $entityManager, CreateLocationClaimDraft $createDraft, \App\Domain\Claim\ClaimAccessSessionManager $sessionManager): JsonResponse
     {
         if ($request->isMethod('GET')) {
             $claims = $entityManager->getRepository(LocationClaimRequest::class)->findBy([], ['id' => 'DESC'], 50);
@@ -41,27 +41,57 @@ final class LocationClaimCollectionController extends AbstractController
             return $this->json(['data' => null, 'meta' => [], 'errors' => ['Invalid JSON body.']], 400);
         }
 
-        foreach (['source_type', 'location_name', 'claimant_name', 'email'] as $field) {
-            if (empty($payload[$field])) {
-                return $this->json(['data' => null, 'meta' => [], 'errors' => [sprintf('Field "%s" is required.', $field)]], 422);
+        if (isset($payload['submission_mode']) && $payload['submission_mode'] !== 'assisted') {
+            return $this->json(['data' => null, 'meta' => [], 'errors' => ['Invalid submission_mode.']], 422);
+        }
+
+        $isAssisted = isset($payload['submission_mode']) && $payload['submission_mode'] === 'assisted';
+
+        if (!$isAssisted) {
+            // Validaciones Legacy
+            foreach (['source_type', 'location_name', 'claimant_name', 'email'] as $field) {
+                if (empty($payload[$field])) {
+                    return $this->json(['data' => null, 'meta' => [], 'errors' => [sprintf('Field "%s" is required.', $field)]], 422);
+                }
+            }
+        } else {
+            // Validaciones Assisted
+            foreach (['source_type', 'location_name'] as $field) {
+                if (empty($payload[$field])) {
+                    return $this->json(['data' => null, 'meta' => [], 'errors' => [sprintf('Field "%s" is required.', $field)]], 422);
+                }
             }
         }
 
-        if (isset($payload['submission_mode']) && $payload['submission_mode'] === 'assisted') {
-            $claim = $createDraft->execute(
-                (string) $payload['location_name'],
-                (string) $payload['email'],
-                isset($payload['external_source_key']) ? (string) $payload['external_source_key'] : null,
-                isset($payload['canonical_location_id']) ? (int) $payload['canonical_location_id'] : null
-            );
+        if ($isAssisted) {
+            try {
+                $claim = $createDraft->execute(
+                    (string) $payload['source_type'],
+                    (string) $payload['location_name'],
+                    isset($payload['external_source_key']) ? (string) $payload['external_source_key'] : null,
+                    isset($payload['canonical_location_id']) ? (int) $payload['canonical_location_id'] : null,
+                    isset($payload['email']) ? (string) $payload['email'] : null,
+                    isset($payload['claimant_name']) ? (string) $payload['claimant_name'] : null,
+                    isset($payload['short_address']) ? (string) $payload['short_address'] : null,
+                    isset($payload['prefill_payload']) && is_array($payload['prefill_payload']) ? $payload['prefill_payload'] : null
+                );
+            } catch (\InvalidArgumentException $e) {
+                return $this->json(['data' => null, 'meta' => [], 'errors' => [$e->getMessage()]], 422);
+            }
 
+            $token = $sessionManager->issueToken($claim, ['claim:write']);
+            $entityManager->flush();
             return $this->json([
                 'data' => [
                     'claim_id' => $claim->getId(),
                     'claim_uuid' => $claim->getClaimUuid(),
                     'status' => $claim->getStatus(),
+                    'submission_mode' => $claim->getSubmissionMode(),
                     'last_completed_step' => null,
-                    'next_action' => 'request_email_otp'
+                    'next_action' => 'request_email_otp',
+                    'access_token' => $token['token'],
+                    'expires_in' => $token['expires_in'],
+                    'token_type' => 'Bearer',
                 ],
                 'meta' => [],
                 'errors' => [],

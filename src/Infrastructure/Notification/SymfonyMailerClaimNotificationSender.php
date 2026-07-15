@@ -24,7 +24,7 @@ final class SymfonyMailerClaimNotificationSender implements ClaimNotificationSen
     ) {
     }
 
-    public function sendEmailOtp(LocationClaimRequest $claim, string $otpCode): void
+    public function sendEmailOtp(LocationClaimRequest $claim, string $otpCode, int $ttlMinutes = 10): void
     {
         $email = (new TemplatedEmail())
             ->from(new Address($this->fromEmail, $this->fromName))
@@ -35,6 +35,7 @@ final class SymfonyMailerClaimNotificationSender implements ClaimNotificationSen
             ->context([
                 'otp_code' => $otpCode,
                 'location_name' => $claim->getLocationName(),
+                'ttl_minutes' => $ttlMinutes,
             ]);
 
         try {
@@ -51,7 +52,7 @@ final class SymfonyMailerClaimNotificationSender implements ClaimNotificationSen
         }
     }
 
-    public function sendResumeLink(LocationClaimRequest $claim, string $resumeToken): void
+    public function sendResumeLink(LocationClaimRequest $claim, string $resumeToken, int $ttlHours = 24): void
     {
         $resumeUrl = sprintf('%s/claim/resume/%s', rtrim($this->publicBaseUrl, '/'), rawurlencode($resumeToken));
 
@@ -64,6 +65,7 @@ final class SymfonyMailerClaimNotificationSender implements ClaimNotificationSen
             ->context([
                 'resume_url' => $resumeUrl,
                 'location_name' => $claim->getLocationName(),
+                'ttl_hours' => $ttlHours,
             ]);
 
         try {
@@ -82,15 +84,18 @@ final class SymfonyMailerClaimNotificationSender implements ClaimNotificationSen
 
     public function sendSubmissionConfirmation(LocationClaimRequest $claim): void
     {
+        $publicReference = 'MM-' . strtoupper(substr(hash('sha256', (string) $claim->getClaimUuid()), 0, 10));
         $email = (new TemplatedEmail())
             ->from(new Address($this->fromEmail, $this->fromName))
             ->to($claim->getEmail())
-            ->subject('Hemos recibido tu solicitud de reclamación')
+            ->subject(sprintf('Recibimos tu solicitud para administrar %s', $claim->getLocationName()))
             ->htmlTemplate('emails/claim/submitted.html.twig')
             ->textTemplate('emails/claim/submitted.txt.twig')
             ->context([
                 'location_name' => $claim->getLocationName(),
-                'claim_uuid' => $claim->getClaimUuid(),
+                'public_reference' => $publicReference,
+                'submitted_at' => $claim->getSubmittedAt(),
+                'public_base_url' => $this->publicBaseUrl,
             ]);
 
         try {

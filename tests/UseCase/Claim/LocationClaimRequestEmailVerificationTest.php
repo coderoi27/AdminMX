@@ -33,4 +33,24 @@ class LocationClaimRequestEmailVerificationTest extends TestCase
         $this->assertGreaterThanOrEqual($before, $emailVerified);
         $this->assertLessThanOrEqual($after, $emailVerified);
     }
+
+    public function testClaimFlowAccessorsExposePersistedWorkflowFields(): void
+    {
+        $claim = new LocationClaimRequest();
+        $expiresAt = new \DateTimeImmutable('2026-06-22T11:00:00+00:00');
+        $revokedAt = new \DateTimeImmutable('2026-06-22T12:00:00+00:00');
+
+        $claim
+            ->setResumeTokenHash('resume-hash')
+            ->setResumeTokenExpiresAt($expiresAt)
+            ->setResumeTokenRevokedAt($revokedAt)
+            ->setLastCompletedStep('legal')
+            ->setLegalAcceptanceReference('terms:v1|privacy:v1');
+
+        $this->assertSame('resume-hash', $claim->getResumeTokenHash());
+        $this->assertSame($expiresAt, $claim->getResumeTokenExpiresAt());
+        $this->assertSame($revokedAt, $claim->getResumeTokenRevokedAt());
+        $this->assertSame('legal', $claim->getLastCompletedStep());
+        $this->assertSame('terms:v1|privacy:v1', $claim->getLegalAcceptanceReference());
+    }
 }

@@ -18,7 +18,8 @@ final class IssueLocationClaimResumeToken
     public function __construct(
         EntityManagerInterface $em,
         ClaimResumeTokenService $resumeTokenService,
-        ClaimNotificationSenderInterface $notificationSender
+        ClaimNotificationSenderInterface $notificationSender,
+        private int $claimResumeTokenTtl
     ) {
         $this->em = $em;
         $this->resumeTokenService = $resumeTokenService;
@@ -42,7 +43,7 @@ final class IssueLocationClaimResumeToken
         }
 
         if ($activeClaim) {
-            $tokenData = $this->resumeTokenService->generateToken();
+            $tokenData = $this->resumeTokenService->generateToken($this->claimResumeTokenTtl);
             
             $reflection = new \ReflectionClass($activeClaim);
             $propResumeHash = $reflection->getProperty('resumeTokenHash');
@@ -53,9 +54,14 @@ final class IssueLocationClaimResumeToken
 
             $this->em->flush();
 
-            $this->notificationSender->sendResumeLink($activeClaim, $tokenData['token']);
+            $this->notificationSender->sendResumeLink($activeClaim, $tokenData['token'], $this->ttlHours());
         }
         
         // No Exception is thrown to prevent enumeration. Always return void/success.
+    }
+
+    private function ttlHours(): int
+    {
+        return (int) ceil($this->claimResumeTokenTtl / 3600);
     }
 }

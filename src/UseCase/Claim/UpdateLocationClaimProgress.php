@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Claim;
 
 use App\Entity\Core\LocationClaimRequest;
+use App\Entity\Core\LocationClaimEvidence;
 use App\Domain\Claim\ClaimStateMachine;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -34,6 +35,10 @@ final class UpdateLocationClaimProgress
 
         if (array_key_exists('claimant_name', $dto)) {
             $claim->setClaimantName($dto['claimant_name']);
+        }
+
+        if (array_key_exists('email', $dto)) {
+            $claim->setEmail($dto['email']);
         }
         
         if (array_key_exists('claimant_role', $dto)) {
@@ -72,12 +77,33 @@ final class UpdateLocationClaimProgress
         }
 
         if (array_key_exists('last_completed_step', $dto)) {
-            $prop = $reflection->getProperty('lastCompletedStep');
-            $prop->setValue($claim, $dto['last_completed_step']);
+            $claim->setLastCompletedStep($dto['last_completed_step']);
         }
 
-        $this->em->flush();
+        if (array_key_exists('legal_acceptance_reference', $dto)) {
+            if (!$this->hasCompletedEvidence($claim)) {
+                throw new \DomainException('claim_evidence_required');
+            }
 
+            $claim->setLegalAcceptanceReference($dto['legal_acceptance_reference']);
+            $prefill = $claim->getPrefillPayloadJson() ?? [];
+            $prefill['legal_acceptance'] = [
+                'reference' => $dto['legal_acceptance_reference'],
+                'accepted_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            ];
+            $claim->setPrefillPayloadJson($prefill);
+        }
+
+        $this->em->persist($claim);
+        $this->em->flush();
         return $claim;
+    }
+
+    private function hasCompletedEvidence(LocationClaimRequest $claim): bool
+    {
+        return $this->em->getRepository(LocationClaimEvidence::class)->count([
+            'claim' => $claim,
+            'status' => [LocationClaimEvidence::STATUS_UPLOADED, LocationClaimEvidence::STATUS_VERIFIED],
+        ]) > 0;
     }
 }

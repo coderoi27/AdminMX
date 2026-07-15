@@ -18,30 +18,57 @@ final class CreateLocationClaimDraft
         $this->em = $em;
     }
 
-    public function execute(string $locationName, string $email, ?string $externalSourceKey = null, ?int $canonicalLocationId = null): LocationClaimRequest
-    {
-        $claim = new LocationClaimRequest();
-        $claim->setSourceType('google_places'); // or other if needed, but google_places is default
-        $claim->setLocationName($locationName);
-        $claim->setEmail($email);
-        
-        $reflection = new \ReflectionClass($claim);
-        
-        if ($externalSourceKey !== null) {
-            $prop = $reflection->getProperty('externalSourceKey');
-            $prop->setValue($claim, $externalSourceKey);
+    public function execute(
+        string $sourceType,
+        string $locationName,
+        ?string $externalSourceKey = null,
+        ?int $canonicalLocationId = null,
+        ?string $email = null,
+        ?string $claimantName = null,
+        ?string $shortAddress = null,
+        ?array $prefillPayload = null
+    ): LocationClaimRequest {
+        if ($sourceType === 'google_places' && empty($externalSourceKey)) {
+            throw new \InvalidArgumentException('external_source_key is required for google_places.');
         }
-        
-        if ($canonicalLocationId !== null) {
-            $prop = $reflection->getProperty('canonicalLocationId');
-            $prop->setValue($claim, $canonicalLocationId);
+        if ($sourceType === 'canonical' && empty($canonicalLocationId)) {
+            throw new \InvalidArgumentException('canonical_location_id is required for canonical.');
+        }
+        if ($sourceType === 'google_places' && !empty($canonicalLocationId)) {
+            throw new \InvalidArgumentException('canonical_location_id must not be provided for google_places.');
+        }
+        if ($sourceType === 'canonical' && !empty($externalSourceKey)) {
+            throw new \InvalidArgumentException('external_source_key must not be provided for canonical.');
         }
 
-        $propStatus = $reflection->getProperty('status');
-        $propStatus->setValue($claim, ClaimStateMachine::STATE_DRAFT);
+        $safePrefill = null;
+        if (is_array($prefillPayload)) {
+            $allowed = ['lat', 'lng', 'category_slug', 'photo_url', 'short_address', 'display_source'];
+            $safePrefill = [];
+            foreach ($allowed as $key) {
+                if (array_key_exists($key, $prefillPayload)) {
+                    $safePrefill[$key] = $prefillPayload[$key];
+                }
+            }
+            if (empty($safePrefill)) {
+                $safePrefill = null;
+            }
+        }
+
+        $claim = new LocationClaimRequest();
+        $claim->setSourceType($sourceType);
+        $claim->setLocationName($locationName);
+        $claim->setExternalSourceKey($externalSourceKey);
+        $claim->setCanonicalLocationId($canonicalLocationId);
         
-        $propUuid = $reflection->getProperty('claimUuid');
-        $propUuid->setValue($claim, Uuid::v4()->toRfc4122());
+        $claim->setEmail($email);
+        $claim->setClaimantName($claimantName);
+        $claim->setShortAddress($shortAddress);
+        $claim->setPrefillPayloadJson($safePrefill);
+
+        $claim->setStatus(ClaimStateMachine::STATE_DRAFT);
+        $claim->setSubmissionMode('assisted');
+        $claim->setClaimUuid(Uuid::v4()->toRfc4122());
 
         $this->em->persist($claim);
         $this->em->flush();

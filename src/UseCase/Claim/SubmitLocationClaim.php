@@ -6,42 +6,51 @@ namespace App\UseCase\Claim;
 
 use App\Entity\Core\LocationClaimRequest;
 use App\Entity\Core\LocationClaimEvidence;
+use App\Domain\Claim\ClaimAccessSessionManager;
+use App\Domain\Claim\ClaimNotificationSenderInterface;
 use App\Domain\Claim\ClaimStateMachine;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 final class SubmitLocationClaim
 {
     private EntityManagerInterface $em;
     private ClaimStateMachine $stateMachine;
-    private \App\Domain\Claim\ClaimAccessSessionManager $sessionManager;
+    private ClaimAccessSessionManager $sessionManager;
+    private ClaimNotificationSenderInterface $notificationSender;
+    private LoggerInterface $logger;
 
     public function __construct(
         EntityManagerInterface $em,
         ClaimStateMachine $stateMachine,
-        \App\Domain\Claim\ClaimAccessSessionManager $sessionManager
+        ClaimAccessSessionManager $sessionManager,
+        ClaimNotificationSenderInterface $notificationSender,
+        LoggerInterface $logger
     ) {
         $this->em = $em;
         $this->stateMachine = $stateMachine;
         $this->sessionManager = $sessionManager;
+        $this->notificationSender = $notificationSender;
+        $this->logger = $logger;
     }
 
     public function execute(LocationClaimRequest $claim): void
     {
+        if ($claim->getStatus() === ClaimStateMachine::STATE_SUBMITTED) {
+            return;
+        }
+
         if (!$this->stateMachine->canTransitionTo($claim->getStatus(), ClaimStateMachine::STATE_SUBMITTED)) {
             throw new \DomainException('Cannot submit claim in current state.');
         }
 
-        $reflection = new \ReflectionClass($claim);
-        
         // Validation: Must have email verified
-        $emailVerifiedAt = $reflection->getProperty('emailVerifiedAt')->getValue($claim);
-        if ($emailVerifiedAt === null) {
+        if ($claim->getEmailVerifiedAt() === null) {
             throw new \DomainException('Email must be verified before submitting.');
         }
 
         // Validation: Must have legal acceptance
-        $legalAcceptance = $reflection->getProperty('legalAcceptanceReference')->getValue($claim);
-        if (empty($legalAcceptance)) {
+        if (empty($claim->getLegalAcceptanceReference())) {
             throw new \DomainException('Legal acceptance is required before submitting.');
         }
 
@@ -53,15 +62,20 @@ final class SubmitLocationClaim
             throw new \DomainException('At least one evidence file must be uploaded.');
         }
 
-        // Update status
-        $reflection->getProperty('status')->setValue($claim, ClaimStateMachine::STATE_SUBMITTED);
-        $reflection->getProperty('submittedAt')->setValue($claim, new \DateTimeImmutable());
+        $claim->setStatus(ClaimStateMachine::STATE_SUBMITTED);
+        $this->em->flush();
 
         // Revoke active sessions
         $this->sessionManager->revokeSessionsForClaim($claim, 'submitted');
-
         $this->em->flush();
-        
-        // Event dispatching or notifications could happen here.
+
+        try {
+            $this->notificationSender->sendSubmissionConfirmation($claim);
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to send claim submission confirmation email.', [
+                'claim_uuid' => $claim->getClaimUuid(),
+                'exception_class' => $e::class,
+            ]);
+        }
     }
 }

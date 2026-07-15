@@ -1,78 +1,72 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Claims | Admin Mi Monchis MX{% endblock %}
+{% block header_title %}Claims{% endblock %}
 
 {% block body %}
-    <main style="max-width: 1120px; margin: 0 auto; padding: 3rem 1.5rem; font-family: system-ui, sans-serif;">
+    <div class="max-w-7xl mx-auto space-y-6">
+        <div class="flex items-end justify-between gap-4 flex-wrap">
+            <div>
+                <p class="text-xs font-black uppercase tracking-[0.18em] text-orange-600">Revisión operativa</p>
+                <h1 class="mt-1 text-3xl font-black text-slate-950">Claims de locales</h1>
+                <p class="mt-2 text-sm text-slate-500">Revisa identidad y evidencia. Aprobar no crea ni publica un local.</p>
+            </div>
+            <span class="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">{{ claims|length }} resultados</span>
+        </div>
+
         {% for label, messages in app.flashes %}
             {% for message in messages %}
-                <div style="margin-bottom: 1rem; border-radius: 14px; padding: 0.9rem 1rem; background: {{ label == 'error' ? '#fff1f2' : '#eff6ff' }}; color: {{ label == 'error' ? '#be123c' : '#1d4ed8' }};">{{ message }}</div>
+                <div class="rounded-2xl border px-4 py-3 text-sm font-bold {{ label == 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800' }}">{{ message }}</div>
             {% endfor %}
         {% endfor %}
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-            <div>
-                <p style="margin:0 0 0.4rem; font-size:0.82rem; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280;">Alpha Admin</p>
-                <h1 style="margin:0; font-size:2rem; color:#111827;">Claims de locales</h1>
+
+        <form method="get" class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-5">
+            <label class="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Estado
+                <select name="status" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold normal-case text-slate-900">
+                    <option value="">Todos</option>
+                    {% for status in statuses %}<option value="{{ status }}" {{ filters.status == status ? 'selected' }}>{{ status }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Fuente
+                <select name="source" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold normal-case text-slate-900">
+                    <option value="">Todas</option>
+                    {% for source in sources %}<option value="{{ source }}" {{ filters.source == source ? 'selected' }}>{{ source }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Desde
+                <input type="date" name="date_from" value="{{ filters.date_from }}" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900">
+            </label>
+            <label class="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Hasta
+                <input type="date" name="date_to" value="{{ filters.date_to }}" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900">
+            </label>
+            <div class="flex items-end gap-2">
+                <button class="flex-1 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white">Filtrar</button>
+                <a href="{{ path('admin_claims_index') }}" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600">Limpiar</a>
             </div>
-            <a href="{{ path('admin_dashboard') }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.5rem; border-radius:999px; padding:0.6rem 1rem; border:1px solid #d1d5db; color:#374151; text-decoration:none; font-weight:700;">Volver al dashboard</a>
-        </div>
-        <section style="margin-top:1.5rem; display:grid; gap:0.9rem;">
+        </form>
+
+        <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             {% if claims is empty %}
-                <article style="border:1px solid #e5e7eb; border-radius:18px; padding:1.25rem; background:#fff;">
-                    <strong>No hay claims todavía.</strong>
-                </article>
+                <div class="p-10 text-center text-sm font-semibold text-slate-500">No hay claims para estos filtros.</div>
             {% else %}
-                {% for claim in claims %}
-                    <article style="display:grid; gap:0.75rem; border:1px solid #e5e7eb; border-radius:18px; padding:1rem 1.1rem; background:#fff;">
-                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-                            <div>
-                                <strong style="display:block; color:#111827;">{{ claim.locationName }}</strong>
-                                <span style="display:block; margin-top:0.2rem; color:#6b7280;">{{ claim.shortAddress ?: 'Sin direccion' }}</span>
-                            </div>
-                            <span style="padding:0.32rem 0.65rem; border-radius:999px; background:#111827; color:#fff; font-size:0.76rem; font-weight:800; text-transform:uppercase;">{{ claim.statusLabel(claim.status) }}</span>
-                        </div>
-                        <div style="display:flex; gap:1rem; flex-wrap:wrap; color:#6b7280; font-size:0.92rem;">
-                            <span>{{ claim.sourceType }}</span>
-                            <span>{{ claim.claimantName }}</span>
-                            <span>{{ claim.email }}</span>
-                            {% if claim.externalSourceKey %}<span>{{ claim.externalSourceKey }}</span>{% endif %}
-                        </div>
-                        {% set checklist = claim.reviewChecklistJson|default({}) %}
-                        <form method="post" action="{{ path('admin_claims_status', { id: claim.id }) }}" style="display:grid; gap:0.75rem;">
-                            <input type="hidden" name="_token" value="{{ csrf_token('claim_status_' ~ claim.id) }}">
-                            <label style="display:grid; gap:0.35rem; color:#374151; font-weight:700;">
-                                Evidencias del claim
-                                <textarea name="evidence_links" rows="3" placeholder="https://..." style="width:100%; border:1px solid #d1d5db; border-radius:12px; padding:0.75rem; font:inherit; color:#111827;">{% for item in claim.evidenceLinksJson|default([]) %}{{ item.url }}{% if not loop.last %}&#10;{% endif %}{% endfor %}</textarea>
-                            </label>
-                            <div style="display:flex; gap:0.8rem; flex-wrap:wrap; color:#374151; font-size:0.9rem;">
-                                <label style="display:inline-flex; align-items:center; gap:0.4rem;">
-                                    <input type="checkbox" name="check_contact_verified" value="1" {{ checklist.contact_verified|default(false) ? 'checked' : '' }}>
-                                    Contacto verificado
-                                </label>
-                                <label style="display:inline-flex; align-items:center; gap:0.4rem;">
-                                    <input type="checkbox" name="check_ownership_evidence" value="1" {{ checklist.ownership_evidence|default(false) ? 'checked' : '' }}>
-                                    Evidencia de propiedad
-                                </label>
-                                <label style="display:inline-flex; align-items:center; gap:0.4rem;">
-                                    <input type="checkbox" name="check_location_match" value="1" {{ checklist.location_match|default(false) ? 'checked' : '' }}>
-                                    Coincide con el local
-                                </label>
-                            </div>
-                            <label style="display:grid; gap:0.35rem; color:#374151; font-weight:700;">
-                                Nota de revisión
-                                <textarea name="review_notes" rows="2" placeholder="Notas internas para operación" style="width:100%; border:1px solid #d1d5db; border-radius:12px; padding:0.75rem; font:inherit; color:#111827;">{{ claim.reviewNotes }}</textarea>
-                            </label>
-                            <div style="display:flex; gap:0.65rem; flex-wrap:wrap;">
-                                {% for status in statuses %}
-                                    <button type="submit" name="status" value="{{ status }}" style="display:inline-flex; align-items:center; justify-content:center; min-height:2.1rem; border-radius:999px; padding:0.5rem 0.9rem; border:1px solid #d1d5db; background:{{ claim.status == status ? '#111827' : '#fff' }}; color:{{ claim.status == status ? '#fff' : '#374151' }}; font-weight:700;">
-                                        {{ claim.statusLabel(status) }}
-                                    </button>
-                                {% endfor %}
-                            </div>
-                        </form>
-                    </article>
-                {% endfor %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+                        <thead class="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-500"><tr><th class="px-5 py-4">Local</th><th class="px-5 py-4">Solicitante</th><th class="px-5 py-4">Fuente</th><th class="px-5 py-4">Estado</th><th class="px-5 py-4">Fecha</th><th class="px-5 py-4"></th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">
+                        {% for claim in claims %}
+                            <tr class="hover:bg-orange-50/40">
+                                <td class="px-5 py-4"><strong class="block text-slate-950">{{ claim.locationName ?: 'Local sin nombre' }}</strong><span class="mt-1 block max-w-xs truncate text-xs text-slate-500">{{ claim.shortAddress ?: 'Sin dirección' }}</span></td>
+                                <td class="px-5 py-4"><span class="block font-semibold text-slate-800">{{ claim.claimantName ?: 'Sin nombre' }}</span><span class="text-xs text-slate-500">{{ claim.email ?: 'Sin correo' }}</span></td>
+                                <td class="px-5 py-4 font-semibold text-slate-600">{{ claim.sourceType }}</td>
+                                <td class="px-5 py-4"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">{{ claim.status }}</span></td>
+                                <td class="px-5 py-4 text-slate-500">{{ claim.createdAt|date('d/m/Y H:i') }}</td>
+                                <td class="px-5 py-4 text-right"><a href="{{ path('admin_claims_show', {id: claim.id}) }}" class="rounded-xl bg-orange-600 px-3 py-2 text-xs font-black text-white">Revisar</a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% endif %}
         </section>
-    </main>
+    </div>
 {% endblock %}
