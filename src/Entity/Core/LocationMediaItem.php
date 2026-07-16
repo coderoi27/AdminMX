@@ -15,6 +15,11 @@ class LocationMediaItem
     public const TYPE_LOGO = 'logo';
     public const TYPE_MENU = 'menu';
 
+    public const MODERATION_PENDING = 'pending';
+    public const MODERATION_APPROVED = 'approved';
+    public const MODERATION_REJECTED = 'rejected';
+    public const MODERATION_QUARANTINED = 'quarantined';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -44,6 +49,18 @@ class LocationMediaItem
 
     #[ORM\Column]
     private bool $isActive = true;
+
+    #[ORM\Column(length: 32)]
+    private string $moderationStatus = self::MODERATION_APPROVED;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $moderationReasonCategory = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $moderationNotes = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $moderatedAt = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -170,11 +187,83 @@ class LocationMediaItem
         return $this;
     }
 
+    public function getModerationStatus(): string
+    {
+        return $this->moderationStatus;
+    }
+
+    public function setModerationStatus(string $moderationStatus): self
+    {
+        if (!in_array($moderationStatus, self::moderationStatuses(), true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported media moderation status "%s".', $moderationStatus));
+        }
+
+        $this->moderationStatus = $moderationStatus;
+        $this->isActive = $moderationStatus === self::MODERATION_APPROVED;
+
+        return $this;
+    }
+
+    public function getModerationReasonCategory(): ?string
+    {
+        return $this->moderationReasonCategory;
+    }
+
+    public function setModerationReasonCategory(?string $moderationReasonCategory): self
+    {
+        $this->moderationReasonCategory = $moderationReasonCategory !== null && trim($moderationReasonCategory) !== ''
+            ? mb_substr(trim($moderationReasonCategory), 0, 64)
+            : null;
+
+        return $this;
+    }
+
+    public function getModerationNotes(): ?string
+    {
+        return $this->moderationNotes;
+    }
+
+    public function setModerationNotes(?string $moderationNotes): self
+    {
+        $this->moderationNotes = $moderationNotes !== null && trim($moderationNotes) !== '' ? trim($moderationNotes) : null;
+
+        return $this;
+    }
+
+    public function getModeratedAt(): ?\DateTimeImmutable
+    {
+        return $this->moderatedAt;
+    }
+
+    public function moderate(string $status, ?string $reasonCategory = null, ?string $notes = null): self
+    {
+        $this
+            ->setModerationStatus($status)
+            ->setModerationReasonCategory($reasonCategory)
+            ->setModerationNotes($notes);
+        $this->moderatedAt = new \DateTimeImmutable();
+
+        return $this;
+    }
+
     /**
      * @return list<string>
      */
     public static function mediaTypes(): array
     {
         return [self::TYPE_PHOTO, self::TYPE_LOGO, self::TYPE_MENU];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function moderationStatuses(): array
+    {
+        return [
+            self::MODERATION_PENDING,
+            self::MODERATION_APPROVED,
+            self::MODERATION_REJECTED,
+            self::MODERATION_QUARANTINED,
+        ];
     }
 }

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Controller\Api\Core;
 
 use App\Entity\Core\LocationCategory;
+use App\Entity\Core\CatalogMediaCategoryAssignment;
 use App\Entity\Core\LocationOpeningException;
 use App\Entity\Core\LocationOpeningHour;
 use App\Entity\Core\MerchantLocation;
 use App\Entity\Core\PlaceCategoryRule;
 use App\Entity\Core\SystemPlugin;
 use App\Entity\Core\GooglePlaceBlacklist;
+use App\Service\CatalogMedia\CatalogMediaFeedResolver;
 use App\Service\PublicBrandingConfig;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class LocationFeedController extends AbstractController
 {
     #[Route('/api/v1/locations/feed', name: 'api_core_locations_feed', methods: ['GET'])]
-    public function __invoke(Request $request, EntityManagerInterface $entityManager, PublicBrandingConfig $brandingConfig): JsonResponse
+    public function __invoke(Request $request, EntityManagerInterface $entityManager, PublicBrandingConfig $brandingConfig, CatalogMediaFeedResolver $catalogMediaFeedResolver): JsonResponse
     {
         $locations = $entityManager->getRepository(MerchantLocation::class)->createQueryBuilder('location')
             ->leftJoin('location.merchant', 'merchant')->addSelect('merchant')
@@ -42,6 +44,9 @@ final class LocationFeedController extends AbstractController
         $categories = $entityManager->getRepository(LocationCategory::class)->findBy(['isActive' => true], ['sortOrder' => 'ASC', 'name' => 'ASC']);
         $googlePlacesPlugin = $this->findGooglePlacesPlugin($entityManager);
         $googlePlacesEnabled = $googlePlacesPlugin !== null && $googlePlacesPlugin->isEnabled();
+        $googlePlacesSettings = $this->googlePlacesSettings($googlePlacesPlugin);
+        $googlePlacesPhotosAllowed = $googlePlacesEnabled && ($googlePlacesSettings['include_photos'] ?? false) === true;
+        $catalogAssignmentsByCategory = $this->catalogAssignmentsByCategory($entityManager, $locations);
         $blacklistedPlaces = $this->findGooglePlaceBlacklist($entityManager);
         $placeCategoryRules = $this->findPlaceCategoryRules($entityManager);
         $claimedGooglePlaceIds = $this->findClaimedGooglePlaceIds($entityManager);
@@ -50,11 +55,21 @@ final class LocationFeedController extends AbstractController
         $lng = $request->query->get('lng');
 
         $data = array_map(
-            function (MerchantLocation $location) use ($lat, $lng): array {
+            function (MerchantLocation $location) use ($lat, $lng, $catalogMediaFeedResolver, $catalogAssignmentsByCategory, $googlePlacesPhotosAllowed): array {
                 $primaryAddress = $location->getAddresses()->first();
                 $serviceProfile = $location->getServiceProfile();
                 $availability = $this->canonicalAvailability($location);
                 $primaryMedia = $location->getPrimaryMediaItem();
+                $categoryId = $location->getPrimaryCategory()?->getId();
+                $resolvedMedia = $catalogMediaFeedResolver->resolve(
+                    $location,
+                    $categoryId !== null ? ($catalogAssignmentsByCategory[(int) $categoryId] ?? []) : [],
+                    $googlePlacesPhotosAllowed,
+                );
+                $photoUrl = $primaryMedia?->getUrl();
+                if ($location->getSourceType() === MerchantLocation::SOURCE_TYPE_GOOGLE_PLACES && !$googlePlacesPhotosAllowed) {
+                    $photoUrl = $resolvedMedia['cover']['url'];
+                }
 
                 $distanceMeters = null;
                 if ($primaryAddress !== false && $lat !== null && $lng !== null) {
@@ -82,8 +97,9 @@ final class LocationFeedController extends AbstractController
                     'service_dine_in' => $serviceProfile?->offersDineIn() ?? false,
                     'service_delivery_notes' => $serviceProfile?->getDeliveryNotes(),
                     'service_notes' => $serviceProfile?->getServiceNotes(),
-                    'photo_url' => $primaryMedia?->getUrl(),
+                    'photo_url' => $photoUrl ?? $resolvedMedia['cover']['url'],
                     'media_items' => $this->mediaItemsPayload($location),
+                    'resolved_media' => $resolvedMedia,
                     'social_links' => $this->socialLinksPayload($location),
                     'open_now' => $availability['open_now'],
                     'business_status' => 'OPERATIONAL',
@@ -99,6 +115,7 @@ final class LocationFeedController extends AbstractController
                     'category_id' => $location->getPrimaryCategory()?->getId(),
                     'category_slug' => $location->getPrimaryCategory()?->getSlug(),
                     'category_name' => $location->getPrimaryCategory()?->getName(),
+                    'category_icon_asset_url' => $location->getPrimaryCategory()?->getIconAssetUrl(),
                     'category_icon_key' => $location->getPrimaryCategory()?->getIconKey(),
                     'category_color_hex' => $location->getPrimaryCategory()?->getColorHex(),
                     'category_default_photo_url' => $location->getPrimaryCategory()?->getDefaultPhotoUrl(),
@@ -120,13 +137,14 @@ final class LocationFeedController extends AbstractController
                     'publication_state' => MerchantLocation::publicationStates(),
                     'dedup_priority' => ['owner_registered', 'claimed', 'admin_curated', 'fake_seed', 'google_places'],
                     'favorites_policy' => 'Solo locales canónicos Mi Monchis con location_id estable pueden guardarse como favoritos. Google Places se puede reclamar antes de volverse favorito.',
+                    'resolved_media' => 'alpha-v1',
                 ],
                 'plugins' => [
                     'google_places_proxy' => $googlePlacesEnabled,
                 ],
                 'settings' => [
                     'map' => $this->mapSettings($entityManager),
-                    'google_places_proxy' => $this->googlePlacesSettings($googlePlacesPlugin),
+                    'google_places_proxy' => $googlePlacesSettings,
                     'public_branding' => $this->publicBrandingSettings($entityManager, $brandingConfig),
                 ],
                 'google_places_blacklist' => array_map(
@@ -156,6 +174,7 @@ final class LocationFeedController extends AbstractController
                         'id' => $category->getId(),
                         'name' => $category->getName(),
                         'slug' => $category->getSlug(),
+                        'icon_asset_url' => $category->getIconAssetUrl(),
                         'icon_key' => $category->getIconKey(),
                         'color_hex' => $category->getColorHex(),
                         'default_photo_url' => $category->getDefaultPhotoUrl(),
@@ -182,6 +201,58 @@ final class LocationFeedController extends AbstractController
             ],
             'errors' => [],
         ]);
+    }
+
+    /**
+     * @param list<MerchantLocation> $locations
+     * @return array<int, array<string, list<CatalogMediaCategoryAssignment>>>
+     */
+    private function catalogAssignmentsByCategory(EntityManagerInterface $entityManager, array $locations): array
+    {
+        $categories = [];
+        foreach ($locations as $location) {
+            $category = $location->getPrimaryCategory();
+            if ($category instanceof LocationCategory && $category->getId() !== null) {
+                $categories[(int) $category->getId()] = $category;
+            }
+        }
+
+        if ($categories === []) {
+            return [];
+        }
+
+        try {
+            $assignments = $entityManager->getRepository(CatalogMediaCategoryAssignment::class)
+                ->createQueryBuilder('assignment')
+                ->leftJoin('assignment.asset', 'asset')->addSelect('asset')
+                ->leftJoin('assignment.pool', 'pool')->addSelect('pool')
+                ->leftJoin('assignment.category', 'category')->addSelect('category')
+                ->andWhere('assignment.category IN (:categories)')
+                ->andWhere('assignment.active = true')
+                ->setParameter('categories', array_values($categories))
+                ->orderBy('assignment.priority', 'ASC')
+                ->addOrderBy('assignment.id', 'ASC')
+                ->getQuery()
+                ->getResult();
+        } catch (DbalException|\Throwable) {
+            return [];
+        }
+
+        $byCategory = [];
+        foreach ($assignments as $assignment) {
+            if (!$assignment instanceof CatalogMediaCategoryAssignment) {
+                continue;
+            }
+
+            $categoryId = $assignment->getCategory()->getId();
+            if ($categoryId === null) {
+                continue;
+            }
+
+            $byCategory[(int) $categoryId][$assignment->getUsageSlot()][] = $assignment;
+        }
+
+        return $byCategory;
     }
 
     private function findGooglePlacesPlugin(EntityManagerInterface $entityManager): ?SystemPlugin
